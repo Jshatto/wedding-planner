@@ -580,14 +580,30 @@
         delegationId: t.delegationId ?? null
       }));
 
+      // Normalize budget items for older saves
+      state.budget = state.budget.map(b => ({
+        ...b,
+        amount: Number(b.amount) || 0,
+        paid: !!b.paid,
+        source: b.source || "",
+        vendorId: b.vendorId ?? null,
+        paidAmount: Number(b.paidAmount) || 0
+      }));
+
       // Normalize vendor payment fields for older saves
       state.vendors = state.vendors.map(v => ({
         ...v,
         quoted: Number(v.quoted) || 0,
         deposit: Number(v.deposit) || 0,
         amountPaid: Number(v.amountPaid) || 0,
-        dueDate: v.dueDate || ""
+        dueDate: v.dueDate || "",
+        budgetCategory: v.budgetCategory || "",
+        includeInBudget: !!v.includeInBudget
       }));
+
+      if(syncAllVendorBudgets()){
+        save("budget");
+      }
     }
 
     function save(key){
@@ -628,6 +644,68 @@
     function toNumber(val){
       const num = parseFloat(val);
       return Number.isFinite(num) ? num : 0;
+    }
+
+    function vendorBudgetItemLabel(vendor){
+      const service = vendor.service ? ` — ${vendor.service}` : "";
+      return `${vendor.name}${service}`;
+    }
+
+    function buildVendorBudgetItem(vendor){
+      const quoted = Number(vendor.quoted) || 0;
+      const paidAmount = Number(vendor.amountPaid) || 0;
+      return {
+        source: "vendor",
+        vendorId: vendor.id,
+        category: vendor.budgetCategory || "",
+        item: vendorBudgetItemLabel(vendor),
+        amount: quoted,
+        paidAmount,
+        paid: quoted > 0 && paidAmount >= quoted
+      };
+    }
+
+    function syncVendorBudgetForVendor(vendor){
+      const matches = state.budget.filter(b => b.source === "vendor" && b.vendorId === vendor.id);
+
+      if(!vendor.includeInBudget){
+        if(!matches.length) return false;
+        state.budget = state.budget.filter(b => !(b.source === "vendor" && b.vendorId === vendor.id));
+        return true;
+      }
+
+      const entry = buildVendorBudgetItem(vendor);
+      const needsUpdate =
+        matches.length !== 1 ||
+        matches[0].category !== entry.category ||
+        matches[0].item !== entry.item ||
+        (Number(matches[0].amount) || 0) !== entry.amount ||
+        (Number(matches[0].paidAmount) || 0) !== entry.paidAmount ||
+        !!matches[0].paid !== entry.paid;
+
+      if(!needsUpdate) return false;
+
+      const keepId = matches[0]?.id ?? Date.now();
+      state.budget = state.budget.filter(b => !(b.source === "vendor" && b.vendorId === vendor.id));
+      state.budget.push({ id: keepId, ...entry });
+      return true;
+    }
+
+    function syncAllVendorBudgets(){
+      let changed = false;
+      state.vendors.forEach(vendor => {
+        if(syncVendorBudgetForVendor(vendor)) changed = true;
+      });
+      return changed;
+    }
+
+    function budgetItemSpent(item){
+      if(item.source === "vendor"){
+        const amount = Number(item.amount) || 0;
+        const paidAmount = Number(item.paidAmount) || 0;
+        return amount > 0 ? Math.min(paidAmount, amount) : paidAmount;
+      }
+      return Number(item.amount) || 0;
     }
 
     
@@ -981,7 +1059,10 @@
     function renderBudgetTab(){
       const wrap = document.createElement("div");
 
-      const totalSpent = state.budget.reduce((sum, item)=>sum + (parseFloat(item.amount)||0), 0);
+      if(syncAllVendorBudgets()){
+        save("budget");
+      }
+      const totalSpent = state.budget.reduce((sum, item)=>sum + budgetItemSpent(item), 0);
       const remaining = state.totalBudget - totalSpent;
       const usedPct = state.totalBudget > 0 ? Math.round((totalSpent / state.totalBudget) * 100) : 0;
 
@@ -1046,7 +1127,16 @@
         const amount = add.querySelector("#bAmount").value.trim();
         if(!category || !item || !amount) return;
 
-        state.budget.push({ id: Date.now(), category, item, amount: parseFloat(amount)||0, paid:false });
+        state.budget.push({
+          id: Date.now(),
+          category,
+          item,
+          amount: parseFloat(amount)||0,
+          paid:false,
+          paidAmount: 0,
+          source: "",
+          vendorId: null
+        });
         save("budget");
         render();
       });
@@ -1082,27 +1172,37 @@
 
       const body = table.querySelector("#budgetBody");
       state.budget.forEach(item=>{
+        const isVendor = item.source === "vendor";
         const tr = el(`
           <tr>
             <td>${escapeHtml(item.category)}</td>
-            <td>${escapeHtml(item.item)}</td>
+            <td>
+              ${escapeHtml(item.item)}
+              ${isVendor ? `<span class="text-xs text-gray-500" style="margin-left:6px;">(Vendor)</span>` : ""}
+            </td>
             <td class="right">$${money(item.amount)}</td>
-            <td class="center"><input type="checkbox" ${item.paid ? "checked":""} style="width:auto" /></td>
-            <td class="center"><button class="icon-btn" type="button" title="Delete">🗑️</button></td>
+            <td class="center">
+              <input type="checkbox" ${item.paid ? "checked":""} style="width:auto" ${isVendor ? "disabled" : ""} />
+            </td>
+            <td class="center">
+              <button class="icon-btn" type="button" title="${isVendor ? "Managed in Vendors tab" : "Delete"}" ${isVendor ? "disabled" : ""}>🗑️</button>
+            </td>
           </tr>
         `);
 
-        tr.querySelector('input[type="checkbox"]').addEventListener("change", ()=>{
-          state.budget = state.budget.map(b => b.id===item.id ? ({...b, paid:!b.paid}) : b);
-          save("budget");
-          render();
-        });
+        if(!isVendor){
+          tr.querySelector('input[type="checkbox"]').addEventListener("change", ()=>{
+            state.budget = state.budget.map(b => b.id===item.id ? ({...b, paid:!b.paid}) : b);
+            save("budget");
+            render();
+          });
 
-        tr.querySelector("button").addEventListener("click", ()=>{
-          state.budget = state.budget.filter(b => b.id!==item.id);
-          save("budget");
-          render();
-        });
+          tr.querySelector("button").addEventListener("click", ()=>{
+            state.budget = state.budget.filter(b => b.id!==item.id);
+            save("budget");
+            render();
+          });
+        }
 
         body.appendChild(tr);
       });
@@ -1130,6 +1230,19 @@
             <input id="vBalance" type="text" placeholder="Balance" value="$0.00" readonly />
             <input id="vDue" type="date" placeholder="Due date" />
           </div>
+          <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
+            <label>
+              <div class="text-xs text-gray-500">Budget category</div>
+              <select id="vBudgetCategory">
+                <option value="">Select category...</option>
+                ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
+              </select>
+            </label>
+            <label class="inline-flex items-center gap-2" style="margin-top:22px;">
+              <input id="vIncludeBudget" type="checkbox" style="width:auto" />
+              <span class="text-sm">Include in Budget</span>
+            </label>
+          </div>
           <div class="mt-4" style="margin-top:12px;">
             <button id="vAdd" class="btn-primary" type="button">Add</button>
           </div>
@@ -1154,8 +1267,10 @@
         const deposit = toNumber(add.querySelector("#vDeposit").value);
         const amountPaid = toNumber(add.querySelector("#vPaid").value);
         const dueDate = add.querySelector("#vDue").value;
+        const budgetCategory = add.querySelector("#vBudgetCategory").value;
+        const includeInBudget = add.querySelector("#vIncludeBudget").checked;
         if(!name || !service) return;
-        state.vendors.push({
+        const vendor = {
           id: Date.now(),
           name,
           service,
@@ -1165,9 +1280,15 @@
           deposit,
           amountPaid,
           dueDate,
+          budgetCategory,
+          includeInBudget,
           notes:""
-        });
+        };
+        state.vendors.push(vendor);
         save("vendors");
+        if(syncVendorBudgetForVendor(vendor)){
+          save("budget");
+        }
         render();
       });
       wrap.appendChild(add);
@@ -1215,21 +1336,48 @@
                 <input type="date" value="${escapeHtml(v.dueDate||"")}" />
               </label>
             </div>
+            <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;">
+              <label>
+                <div class="text-xs text-gray-500">Budget category</div>
+                <select>
+                  <option value="">Select category...</option>
+                  ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}" ${v.budgetCategory === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+                </select>
+              </label>
+              <label class="inline-flex items-center gap-2" style="margin-top:22px;">
+                <input type="checkbox" ${v.includeInBudget ? "checked" : ""} style="width:auto" />
+                <span class="text-sm">Include in Budget</span>
+              </label>
+            </div>
             <textarea rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;">${escapeHtml(v.notes||"")}</textarea>
           </div>
         `);
 
-        const [quotedField, depositField, paidField, balanceField, dueDateField] = card.querySelectorAll('.grid input');
+        const [quotedField, depositField, paidField, balanceField, dueDateField] = card.querySelectorAll('.grid.grid-cols-5 input');
+        const budgetSelect = card.querySelector('select');
+        const includeBudgetToggle = card.querySelector('input[type="checkbox"]');
 
         card.querySelector("button").addEventListener("click", ()=>{
           state.vendors = state.vendors.filter(x => x.id!==v.id);
+          state.budget = state.budget.filter(b => !(b.source === "vendor" && b.vendorId === v.id));
           save("vendors");
+          save("budget");
           render();
         });
 
         const updateVendor = (changes) => {
-          state.vendors = state.vendors.map(x => x.id===v.id ? ({...x, ...changes}) : x);
+          let updatedVendor = null;
+          state.vendors = state.vendors.map(x => {
+            if(x.id === v.id){
+              updatedVendor = { ...x, ...changes };
+              return updatedVendor;
+            }
+            return x;
+          });
           save("vendors");
+          if(updatedVendor && syncVendorBudgetForVendor(updatedVendor)){
+            save("budget");
+          }
         };
 
         const updateBalance = (quoted, amountPaid) => {
@@ -1254,6 +1402,15 @@
 
         dueDateField.addEventListener("input", (e)=>{
           updateVendor({ dueDate: e.target.value });
+        });
+
+        budgetSelect.addEventListener("change", (e)=>{
+          updateVendor({ budgetCategory: e.target.value });
+        });
+
+        includeBudgetToggle.addEventListener("change", (e)=>{
+          updateVendor({ includeInBudget: e.target.checked });
+          render();
         });
 
         card.querySelector("textarea").addEventListener("input", (e)=>{
