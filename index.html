@@ -83,6 +83,7 @@
     .pt-4{padding-top:16px}
 
     .grid{display:grid}
+    .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
     .grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}
     .grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
     .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -94,9 +95,12 @@
 
     @media (max-width: 980px){
       .grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 720px){
       .grid-cols-5,.grid-cols-4,.grid-cols-3,.grid-cols-2{grid-template-columns:1fr}
+      .kpi-grid{grid-template-columns:1fr}
     }
 
     /* inputs/buttons */
@@ -574,7 +578,7 @@
       "Food & Catering",
       "Photography",
       "Videography",
-      "Beauty",
+      "Beauty (Hair/Makeup/Nails/Tan)",
       "Attire",
       "Flowers",
       "Decor",
@@ -639,8 +643,8 @@
       state.diy = safeJson(lsGet(KEYS.diy, "[]"), []) || [];
       state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
 
-      if(!state.budgetCats.includes("Beauty")){
-        state.budgetCats.push("Beauty");
+      if(!state.budgetCats.includes("Beauty (Hair/Makeup/Nails/Tan)")){
+        state.budgetCats.push("Beauty (Hair/Makeup/Nails/Tan)");
         save("budgetCats");
       }
 
@@ -717,6 +721,10 @@
       const num = parseFloat(val);
       return Number.isFinite(num) ? num : 0;
     }
+    function vendorOwed(quoted, deposit, amountPaid){
+      const owed = (Number(quoted) || 0) - (Number(deposit) || 0) - (Number(amountPaid) || 0);
+      return Math.max(owed, 0);
+    }
 
     function vendorBudgetItemLabel(vendor){
       const service = vendor.service ? ` — ${vendor.service}` : "";
@@ -725,15 +733,17 @@
 
     function buildVendorBudgetItem(vendor){
       const quoted = Number(vendor.quoted) || 0;
+      const deposit = Number(vendor.deposit) || 0;
       const paidAmount = Number(vendor.amountPaid) || 0;
+      const owed = vendorOwed(quoted, deposit, paidAmount);
       return {
         source: "vendor",
         vendorId: vendor.id,
         category: vendor.budgetCategory || "",
         item: vendorBudgetItemLabel(vendor),
-        amount: quoted,
-        paidAmount,
-        paid: quoted > 0 && paidAmount >= quoted
+        amount: owed,
+        paidAmount: 0,
+        paid: owed === 0 && quoted > 0
       };
     }
 
@@ -769,15 +779,6 @@
         if(syncVendorBudgetForVendor(vendor)) changed = true;
       });
       return changed;
-    }
-
-    function budgetItemSpent(item){
-      if(item.source === "vendor"){
-        const amount = Number(item.amount) || 0;
-        const paidAmount = Number(item.paidAmount) || 0;
-        return amount > 0 ? Math.min(paidAmount, amount) : paidAmount;
-      }
-      return Number(item.amount) || 0;
     }
 
     
@@ -1134,7 +1135,15 @@
       if(syncAllVendorBudgets()){
         save("budget");
       }
-      const totalSpent = state.budget.reduce((sum, item)=>sum + budgetItemSpent(item), 0);
+      const includedVendors = state.vendors.filter(v => v.includeInBudget);
+      const manualItems = state.budget.filter(b => b.source !== "vendor");
+      const plannedVendors = includedVendors.reduce((sum, v)=>sum + (Number(v.quoted) || 0), 0);
+      const plannedManual = manualItems.reduce((sum, b)=>sum + (Number(b.amount) || 0), 0);
+      const plannedTotal = plannedVendors + plannedManual;
+      const spentVendors = includedVendors.reduce((sum, v)=>sum + (Number(v.deposit) || 0) + (Number(v.amountPaid) || 0), 0);
+      const spentManual = manualItems.reduce((sum, b)=>sum + (b.paid ? (Number(b.amount) || 0) : 0), 0);
+      const totalSpent = spentVendors + spentManual;
+      const unpaidPlanned = Math.max(plannedTotal - totalSpent, 0);
       const remaining = state.totalBudget - totalSpent;
       const usedPct = state.totalBudget > 0 ? Math.round((totalSpent / state.totalBudget) * 100) : 0;
 
@@ -1152,26 +1161,31 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-4 mt-4" style="margin-top:16px;">
+          <div class="grid grid-cols-4 kpi-grid gap-4 mt-4" style="margin-top:16px;">
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">Planned</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(plannedTotal)}</div>
+            </div>
             <div class="p-4 rounded-lg" style="background:var(--bg);">
               <div class="text-sm text-gray-600">Spent</div>
               <div class="text-2xl font-bold" style="color:var(--ink)">$${money(totalSpent)}</div>
             </div>
             <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Remaining</div>
+              <div class="text-sm text-gray-600">Unpaid Planned</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(unpaidPlanned)}</div>
+            </div>
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">Remaining (vs Budget)</div>
               <div class="text-2xl font-bold ${remaining < 0 ? "text-red-600":""}" style="${remaining>=0 ? "color:var(--sage);" : ""}">
                 $${money(remaining)}
               </div>
-            </div>
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">% Used</div>
-              <div class="text-2xl font-bold" style="color:var(--ink)">${usedPct}%</div>
             </div>
           </div>
 
           <div class="w-full progress-outer h-3 mt-4" style="margin-top:16px;">
             <div class="progress-inner" style="background:${remaining<0 ? "#DC2626" : "var(--rose)"}; width:${Math.min(usedPct,100)}%"></div>
           </div>
+          <div class="text-sm text-gray-600" style="margin-top:8px;">${usedPct}% of total budget used</div>
         </div>
       `));
 
@@ -1352,6 +1366,7 @@
       `);
       const quotedInput = add.querySelector("#vQuoted");
       const paidInput = add.querySelector("#vPaid");
+      const depositInput = add.querySelector("#vDeposit");
       const balanceHelp = add.querySelector("#vBalanceHelp");
       const includeToggle = add.querySelector("#vIncludeBudget");
       const budgetWrap = add.querySelector("[data-budget-wrap]");
@@ -1360,7 +1375,8 @@
       const updateAddBalance = () => {
         const quoted = toNumber(quotedInput.value);
         const paid = toNumber(paidInput.value);
-        balanceHelp.textContent = `Balance: $${money(quoted - paid)}`;
+        const deposit = toNumber(depositInput.value);
+        balanceHelp.textContent = `Balance: $${money(vendorOwed(quoted, deposit, paid))}`;
       };
       const setAddBudgetVisibility = (show) => {
         budgetWrap.classList.toggle("hidden", !show);
@@ -1372,6 +1388,7 @@
       };
       quotedInput.addEventListener("input", updateAddBalance);
       paidInput.addEventListener("input", updateAddBalance);
+      depositInput.addEventListener("input", updateAddBalance);
       includeToggle.addEventListener("change", ()=> setAddBudgetVisibility(includeToggle.checked));
       budgetSelect.addEventListener("change", ()=>{ if(budgetSelect.value) budgetValidation.classList.add("hidden"); });
       updateAddBalance();
@@ -1538,10 +1555,11 @@
           }
         };
 
-        const setVendorSummary = (quoted, amountPaid) => {
-          summaryLine.textContent = `Quoted $${money(quoted)} • Paid $${money(amountPaid)} • Balance $${money(quoted - amountPaid)}`;
+        const setVendorSummary = (quoted, deposit, amountPaid) => {
+          const balance = vendorOwed(quoted, deposit, amountPaid);
+          summaryLine.textContent = `Quoted $${money(quoted)} • Deposit $${money(deposit)} • Paid $${money(amountPaid)} • Balance $${money(balance)}`;
           if(balanceText){
-            balanceText.textContent = `Balance: $${money(quoted - amountPaid)}`;
+            balanceText.textContent = `Balance: $${money(balance)}`;
           }
         };
 
@@ -1566,17 +1584,19 @@
         quotedField.addEventListener("input", (e)=>{
           const quoted = toNumber(e.target.value);
           updateVendor({ quoted });
-          setVendorSummary(quoted, toNumber(paidField.value));
+          setVendorSummary(quoted, toNumber(depositField.value), toNumber(paidField.value));
         });
 
         depositField.addEventListener("input", (e)=>{
-          updateVendor({ deposit: toNumber(e.target.value) });
+          const deposit = toNumber(e.target.value);
+          updateVendor({ deposit });
+          setVendorSummary(toNumber(quotedField.value), deposit, toNumber(paidField.value));
         });
 
         paidField.addEventListener("input", (e)=>{
           const amountPaid = toNumber(e.target.value);
           updateVendor({ amountPaid });
-          setVendorSummary(toNumber(quotedField.value), amountPaid);
+          setVendorSummary(toNumber(quotedField.value), toNumber(depositField.value), amountPaid);
         });
 
         dueDateField.addEventListener("input", (e)=>{
@@ -1627,7 +1647,7 @@
           render();
         });
 
-        setVendorSummary(v.quoted, v.amountPaid);
+        setVendorSummary(v.quoted, v.deposit, v.amountPaid);
         setDueLine(v.dueDate);
         setBudgetVisibility(v.includeInBudget);
 
