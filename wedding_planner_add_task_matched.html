@@ -1,0 +1,1673 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#F3EFEA" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Wedding Planner — Jayme & Nate</title>
+  <style>
+    :root{
+      --bg:#F3EFEA;
+      --ink:#8B6B73;
+      --rose:#D6B4BC;
+      --taupe:#C7BDB4;
+      --sage:#9FAF9F;
+      --gold:#B7A26A;
+
+      --text:#111827;
+      --muted:#6B7280;
+      --border:#E5E7EB;
+      --card:#FFFFFF;
+      --shadow: 0 1px 2px rgba(0,0,0,.06);
+      --radius: 12px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    .container{max-width:1100px;margin:0 auto;padding:24px}
+    .card{
+      background:var(--card);
+      border-radius:var(--radius);
+      box-shadow: var(--shadow);
+      border:1px solid rgba(0,0,0,.04);
+    }
+
+    /* Tailwind-ish utilities */
+    .mb-8{margin-bottom:32px}
+    .mb-6{margin-bottom:24px}
+    .mt-4{margin-top:16px}
+    .mt-6{margin-top:24px}
+    .mt-8{margin-top:32px}
+    .p-6{padding:24px}
+    .p-4{padding:16px}
+    .p-3{padding:12px}
+    .text-center{text-align:center}
+    .text-right{text-align:right}
+    .text-4xl{font-size:36px;line-height:1.1}
+    .text-2xl{font-size:24px}
+    .text-xl{font-size:20px}
+    .text-lg{font-size:18px}
+    .text-sm{font-size:14px}
+    .text-xs{font-size:12px}
+    .font-serif{font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;}
+    .font-semibold{font-weight:600}
+    .font-bold{font-weight:700}
+    .italic{font-style:italic}
+    .text-gray-600{color:var(--muted)}
+    .text-gray-700{color:#374151}
+    .text-gray-500{color:#6B7280}
+    .text-gray-400{color:#9CA3AF}
+    .text-red-600{color:#DC2626}
+
+    .inline-flex{display:inline-flex}
+    .items-center{align-items:center}
+    .gap-1{gap:4px}
+    .gap-2{gap:8px}
+    .gap-3{gap:12px}
+    .gap-4{gap:16px}
+    .rounded-full{border-radius:999px}
+    .rounded-lg{border-radius:12px}
+    .shadow-sm{box-shadow: var(--shadow)}
+    .overflow-hidden{overflow:hidden}
+    .w-full{width:100%}
+    .h-3{height:12px}
+    .h-2{height:8px}
+    .border-t{border-top:1px solid var(--border)}
+    .border-gray-100{border-color:#F3F4F6}
+    .pt-4{padding-top:16px}
+
+    .grid{display:grid}
+    .grid-cols-5{grid-template-columns:repeat(5,minmax(0,1fr))}
+    .grid-cols-4{grid-template-columns:repeat(4,minmax(0,1fr))}
+    .grid-cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .col-span-2{grid-column:span 2/span 2}
+    .col-span-3{grid-column:span 3/span 3}
+    .space-y-4 > * + *{margin-top:16px}
+    .space-y-3 > * + *{margin-top:12px}
+
+    @media (max-width: 980px){
+      .grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width: 720px){
+      .grid-cols-5,.grid-cols-4,.grid-cols-3,.grid-cols-2{grid-template-columns:1fr}
+    }
+
+    /* inputs/buttons */
+    input, select, textarea{
+      border:1px solid #D1D5DB;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:14px;
+      outline:none;
+      background:white;
+      width:100%;
+    }
+    input:focus, select:focus, textarea:focus{
+      box-shadow: 0 0 0 3px rgba(214,180,188,.35);
+      border-color: var(--taupe);
+    }
+    button{
+      cursor:pointer;
+      border:0;
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      background:transparent;
+    }
+    .btn-primary{background:var(--rose);color:white}
+    .btn-primary:hover{opacity:.92}
+    .btn-icon{width:44px;display:inline-grid;place-items:center}
+    .hover-bg:hover{background:#F9FAFB}
+
+    /* progress */
+    .progress-outer{background:#E5E7EB;border-radius:999px;overflow:hidden}
+    .progress-inner{height:100%;background:var(--rose);border-radius:999px;transition:width .35s ease}
+
+    /* tabs */
+    .tabs{padding:8px;overflow:auto}
+    .tabsRow{display:flex;gap:6px;min-width:max-content}
+    .tabBtn{
+      display:flex;align-items:center;gap:8px;
+      padding:10px 12px;border-radius:10px;
+      color:var(--muted);background:transparent;
+      font-size:13px;font-weight:700;
+      white-space:nowrap;
+    }
+    .tabBtn:hover{background:#F3F4F6}
+    .tabBtn.active{background:var(--rose);color:white}
+
+    /* category cards */
+    .cat-header{
+      width:100%;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:16px;
+    }
+    .cat-left{display:flex;align-items:center;gap:12px;flex:1}
+    .cat-title{font-weight:600;font-size:18px}
+    .min-w-12{min-width:48px}
+    .badge{padding:6px 12px;border-radius:999px;font-size:14px}
+    .chev{font-size:18px;width:20px;display:inline-grid;place-items:center;color:#6B7280}
+
+    /* task rows */
+    .task-row{
+      display:flex;align-items:flex-start;gap:12px;
+      padding:16px;border-bottom:1px solid #F3F4F6;
+    }
+    .task-row:last-child{border-bottom:0}
+    .task-text{flex:1}
+    .line-through{text-decoration:line-through}
+    .pill-high{
+      padding:4px 8px;font-size:12px;border-radius:999px;
+      background:#FEE2E2;color:#B91C1C;font-weight:700;
+    }
+    
+    /* Priority pills (add + edit) */
+    .priority-pill{
+      padding:6px 12px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:800;
+      cursor:pointer;
+      border:1px solid transparent;
+      user-select:none;
+      white-space:nowrap;
+      transition:filter .12s ease, transform .12s ease, box-shadow .12s ease;
+    }
+    .priority-high{ background:#FEE2E2; color:#B91C1C; border-color:#FCA5A5; }
+    .priority-medium{ background:#FEF3C7; color:#92400E; border-color:#FCD34D; }
+    .priority-low{ background:#DCFCE7; color:#166534; border-color:#86EFAC; }
+    .priority-pill.selected{
+      filter: brightness(0.9);
+      border-color: rgba(0,0,0,.35);
+      box-shadow: 0 0 0 3px rgba(0,0,0,.14), inset 0 1px 2px rgba(0,0,0,.18);
+      transform: translateY(-1px);
+
+      filter:brightness(.92) saturate(1.05);
+      box-shadow: 0 0 0 3px rgba(0,0,0,.08);
+    }
+    .priority-pill:active{ transform: translateY(1px); }
+.icon-btn{background:transparent;padding:6px;border-radius:10px;color:#9CA3AF}
+    .icon-btn:hover{color:#EF4444}
+    .checkboxDot{
+      width:20px;height:20px;border-radius:999px;border:2px solid #D1D5DB;
+      display:inline-grid;place-items:center;margin-top:2px;background:white;
+      user-select:none;
+    }
+    .checkboxDot.done{border-color:var(--rose);background:var(--rose);color:white}
+    .delegateWrap{
+      display:flex;align-items:center;gap:6px;
+      font-size:12px;color:var(--muted);
+      user-select:none;
+      margin-top:6px;
+    }
+    .delegateWrap input{width:auto}
+    .flag{color:#B45309;font-weight:700}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    table{width:100%;border-collapse:collapse}
+    thead th{
+      text-align:left;padding:10px;background:var(--bg);
+      color:var(--ink);font-size:13px;border-bottom:1px solid var(--border);white-space:nowrap;
+    }
+    tbody td{padding:10px;border-top:1px solid var(--border);font-size:13px;vertical-align:top}
+    .right{text-align:right}
+    .center{text-align:center}
+    .tableWrap{overflow:auto}
+
+    /* modal */
+    .modalOverlay{
+      position:fixed;inset:0;background:rgba(0,0,0,.35);
+      display:none;align-items:center;justify-content:center;
+      padding:18px;z-index:9999;
+    }
+    .modalOverlay.show{display:flex}
+    .modal{
+      width:min(520px, 100%);
+      background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+      border:1px solid rgba(0,0,0,.08);
+      padding:18px;
+    }
+    .modalActions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+    .btn-outline{border:1px solid #D1D5DB;background:white;color:#374151}
+    .btn-outline:hover{background:#F9FAFB}
+    .btn-danger{background:#DC2626;color:white}
+    .btn-danger:hover{opacity:.92}
+  
+    /* ==========================
+       Mobile / iPad optimization
+       ========================== */
+    html{ -webkit-text-size-adjust: 100%; }
+    body{ overflow-x:hidden; }
+    /* Respect iOS safe areas */
+    .container{
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      padding-top: max(18px, env(safe-area-inset-top));
+      padding-bottom: max(18px, env(safe-area-inset-bottom));
+    }
+    /* Make tab bar sticky on small screens */
+    .tabs{
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+    /* Better horizontal scrolling behavior for tabs on touch devices */
+    .tabsRow{
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+    }
+    .tabBtn{ scroll-snap-align: start; }
+    /* Tap targets + spacing */
+    .tabBtn{ min-height: 44px; padding: 12px 14px; font-size: 14px; }
+    button{ min-height: 44px; }
+    .btn-icon{ min-width: 44px; }
+    .icon-btn{ min-width: 44px; min-height: 44px; }
+    .task-row{ gap: 14px; }
+    /* Prevent iOS zoom on focus (set at least 16px) */
+    input, select, textarea{ font-size: 16px; }
+    /* Reduce overly-wide layouts + improve card padding on phones */
+    @media (max-width: 720px){
+      .container{ padding: 16px; }
+      .p-6{ padding: 16px; }
+      .p-4{ padding: 14px; }
+      .p-3{ padding: 12px; }
+      .text-4xl{ font-size: 30px; }
+      .cat-header{ padding: 14px; }
+      .task-row{ padding: 14px; }
+      table thead th, tbody td{ padding: 10px; }
+      .modalOverlay{ padding: 14px; }
+      .modal{ padding: 16px; }
+    }
+    /* Make tables easier on mobile */
+    .tableWrap{ -webkit-overflow-scrolling: touch; }
+    /* Improve focus visibility for keyboard users */
+    .tabBtn:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+      outline: 3px solid rgba(214,180,188,.45);
+      outline-offset: 2px;
+    }
+
+  
+  .add-task-form select,
+  .add-task-form input[type="text"],
+  .new-task select,
+  .new-task input[type="text"]{
+    flex:1 1 auto;
+    min-width:220px;
+  }
+  .priority-group{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+  }
+  .add-task-actions{
+    margin-left:auto;
+  }
+}
+
+
+/* Category dropdown: fixed + shorter */
+  .add-task-form select,
+  .new-task select{
+    flex:0 0 220px;
+    max-width:220px;
+  }
+
+  /* Description takes remaining space */
+  .add-task-form input[type="text"],
+  .new-task input[type="text"]{
+    flex:1 1 auto;
+    min-width:300px;
+  }
+
+  /* Priority pills */
+  .priority-group{
+    flex:0 0 auto;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin:0;
+  }
+
+  /* Plus button */
+  .add-task-actions,
+  .add-task-btn{
+    flex:0 0 auto;
+    margin-left:0;
+  }
+}
+
+
+/* ================================
+   Add Task row — match Honeymoon
+   (single line on desktop)
+   ================================ */
+.add-task-row{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap; /* mobile/tablet can wrap */
+}
+.add-task-row > *{ flex:0 0 auto; }
+
+/* keep controls from stretching to 100% inside flex rows */
+.add-task-row select,
+.add-task-row input{ width:auto; }
+
+.add-task-row select{
+  flex:0 0 220px;
+  max-width:220px;
+  min-width:220px;
+}
+.add-task-row input#newTaskText{
+  flex:1 1 auto;
+  min-width:320px;
+}
+
+/* priority group stays compact */
+.add-task-row [data-newtask-priority-wrap]{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+
+/* plus button: small square like Image 1 */
+.add-task-row #addTaskBtn{
+  width:44px;
+  height:44px;
+  padding:0;
+  display:inline-grid;
+  place-items:center;
+  flex:0 0 44px;
+  border-radius:12px;
+}
+
+/* Desktop: force one line */
+@media (min-width: 980px){
+  .add-task-row{ flex-wrap:nowrap; }
+  .add-task-row select{ flex-basis:200px; max-width:200px; min-width:200px; }
+  .add-task-row input#newTaskText{ min-width:420px; }
+}
+
+/* Slightly tighter on mid screens */
+@media (max-width: 979px) and (min-width: 721px){
+  .add-task-row select{ flex-basis:200px; max-width:200px; min-width:200px; }
+  .add-task-row input#newTaskText{ min-width:260px; }
+}
+
+</style>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-serif" style="color:var(--ink); margin:0 0 8px;">Jayme &amp; Nate</h1>
+      <p class="text-gray-600 italic" style="margin:0;">Modern Minimal • Soft Romantic • Classic</p>
+      <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full" style="background:var(--taupe); padding:10px 14px;">
+        <span aria-hidden="true">📅</span>
+        <span class="text-sm" style="color:var(--ink)">~75 Guests • Church Ceremony &amp; Reception</span>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-6 card tabs shadow-sm">
+      <div class="tabsRow" id="tabsRow"></div>
+    </div>
+
+    <!-- Content -->
+    <div id="content"></div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modalOverlay" id="confirmOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal">
+      <div class="text-xl font-semibold" id="confirmTitle" style="color:var(--ink)">Remove delegation?</div>
+      <div class="text-sm text-gray-700" style="margin-top:8px" id="confirmBody">
+        If you uncheck “Delegate,” this item will be removed from the Delegation tab.
+      </div>
+      <div class="modalActions">
+        <button class="btn-outline" id="confirmCancel" type="button">Cancel</button>
+        <button class="btn-danger" id="confirmOk" type="button">Yes, remove</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**********************
+     * Data / Prefill     *
+     **********************/
+    const categories = [
+      { name: 'Stationery & Invitations', color: '#D6B4BC', textColor: '#8B6B73' },
+      { name: 'Ceremony Planning', color: '#C7BDB4', textColor: '#6B6359' },
+      { name: 'Reception & Venue', color: '#9FAF9F', textColor: '#5A6B5A' },
+      { name: 'Food & Catering', color: '#B7A26A', textColor: '#7A6B45' },
+      { name: 'Décor & Styling', color: '#D6B4BC', textColor: '#8B6B73' },
+      { name: 'Timeline & Logistics', color: '#C7BDB4', textColor: '#6B6359' },
+      { name: 'Budget & Vendors', color: '#9FAF9F', textColor: '#5A6B5A' }
+    ];
+
+    const initialTasks = [
+      // Stationery & Invitations
+      { id: 1, category: 'Stationery & Invitations', task: 'Finalize invitation design (matte cardstock, rounded corners, #F2F2F2 background)', done: false, priority: 'high' },
+      { id: 2, category: 'Stationery & Invitations', task: 'Design RSVP cards (#7C5A63 background, #F6F1EA text, QR code)', done: false, priority: 'high' },
+      { id: 3, category: 'Stationery & Invitations', task: 'Get printing quotes (Walmart, VistaPrint, Amazon - under $1/invite)', done: false, priority: 'high' },
+      { id: 4, category: 'Stationery & Invitations', task: 'Order grey envelopes', done: false, priority: 'medium' },
+      { id: 5, category: 'Stationery & Invitations', task: 'Create Cricut addressing template (script for names, simple for addresses)', done: false, priority: 'medium' },
+      { id: 6, category: 'Stationery & Invitations', task: 'Set up RSVP QR code system', done: false, priority: 'medium' },
+
+      // Ceremony Planning
+      { id: 7, category: 'Ceremony Planning', task: 'Book church for ceremony', done: false, priority: 'high' },
+      { id: 8, category: 'Ceremony Planning', task: 'Meet with officiant', done: false, priority: 'high' },
+      { id: 9, category: 'Ceremony Planning', task: 'Plan minimal church décor (clean, simple styling)', done: false, priority: 'low' },
+      { id: 10, category: 'Ceremony Planning', task: 'Finalize ceremony music', done: false, priority: 'medium' },
+
+      // Reception & Venue
+      { id: 11, category: 'Reception & Venue', task: 'Confirm church reception space availability', done: false, priority: 'high' },
+      { id: 12, category: 'Reception & Venue', task: 'Measure space and plan table layout (long or standard tables)', done: false, priority: 'medium' },
+      { id: 13, category: 'Reception & Venue', task: 'Source tablecloths and linens in color palette', done: false, priority: 'medium' },
+      { id: 14, category: 'Reception & Venue', task: 'Determine if centerpieces are needed (minimal approach)', done: false, priority: 'low' },
+
+      // Food & Catering
+      { id: 15, category: 'Food & Catering', task: 'Plan pasta bar menu (multiple pasta options, sauces, toppings)', done: false, priority: 'high' },
+      { id: 16, category: 'Food & Catering', task: 'Plan salad and breadstick details', done: false, priority: 'medium' },
+      { id: 17, category: 'Food & Catering', task: 'Arrange buffet setup supplies (warmers, serving utensils)', done: false, priority: 'medium' },
+      { id: 18, category: 'Food & Catering', task: 'Coordinate with helpers for food prep and service', done: false, priority: 'medium' },
+
+      // Décor & Styling
+      { id: 19, category: 'Décor & Styling', task: 'Select minimal floral accents (natural, not over-styled)', done: false, priority: 'medium' },
+      { id: 20, category: 'Décor & Styling', task: 'Avoid ordering excessive signage (keep minimal)', done: false, priority: 'low' },
+      { id: 21, category: 'Décor & Styling', task: 'Plan any needed welcome/directional signs only', done: false, priority: 'low' },
+
+      // Timeline & Logistics
+      { id: 22, category: 'Timeline & Logistics', task: 'Create day-of timeline', done: false, priority: 'high' },
+      { id: 23, category: 'Timeline & Logistics', task: 'Assign setup tasks to friends/family helpers', done: false, priority: 'medium' },
+      { id: 24, category: 'Timeline & Logistics', task: 'Plan rehearsal dinner details', done: false, priority: 'medium' },
+
+      // Budget & Vendors
+      { id: 25, category: 'Budget & Vendors', task: 'Track all expenses against budget', done: false, priority: 'high' },
+      { id: 26, category: 'Budget & Vendors', task: 'Identify any remaining vendor needs (photographer, etc.)', done: false, priority: 'medium' }
+    ];
+
+    // Budget category dropdown list (edit anytime)
+    const defaultBudgetCategories = [
+      "Stationery",
+      "Venue",
+      "Food & Catering",
+      "Photography",
+      "Videography",
+      "Attire",
+      "Flowers",
+      "Decor",
+      "Music/DJ",
+      "Officiant/License",
+      "Rentals",
+      "Gifts",
+      "Other"
+    ];
+
+    /**********************
+     * Storage + State    *
+     **********************/
+    const KEYS = {
+      activeTab: "wp_activeTab",
+      expanded: "wp_expanded",
+      tasks: "wp_tasks",
+      budget: "wp_budget",
+      vendors: "wp_vendors",
+      guests: "wp_guests",
+      timeline: "wp_timeline",
+      shopping: "wp_shopping",
+      delegation: "wp_delegation",
+      inspiration: "wp_inspiration",
+      totalBudget: "wp_totalBudget",
+      diy: "wp_diy",
+      budgetCats: "wp_budgetCats"
+    };
+
+    const state = {
+      activeTab: "tasks",
+      expanded: {},
+      tasks: [],
+      budget: [],
+      vendors: [],
+      guests: [],
+      timeline: [],
+      shopping: [],
+      delegation: [],
+      inspiration: [],
+      totalBudget: 0,
+      diy: [],
+      budgetCats: []
+    };
+
+    function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
+    function lsGet(key, fallback){ try{ const v = localStorage.getItem(key); return v===null ? fallback : v; }catch(e){ return fallback; } }
+    function lsSet(key, val){ try{ localStorage.setItem(key, val); }catch(e){} }
+
+    function load(){
+      state.activeTab = lsGet(KEYS.activeTab, "tasks");
+      state.expanded = safeJson(lsGet(KEYS.expanded, "{}"), {}) || {};
+      state.tasks = safeJson(lsGet(KEYS.tasks, ""), null) || structuredClone(initialTasks);
+      state.budget = safeJson(lsGet(KEYS.budget, "[]"), []) || [];
+      state.vendors = safeJson(lsGet(KEYS.vendors, "[]"), []) || [];
+      state.guests = safeJson(lsGet(KEYS.guests, "[]"), []) || [];
+      state.timeline = safeJson(lsGet(KEYS.timeline, "[]"), []) || [];
+      state.shopping = safeJson(lsGet(KEYS.shopping, "[]"), []) || [];
+      state.delegation = safeJson(lsGet(KEYS.delegation, "[]"), []) || [];
+      state.inspiration = safeJson(lsGet(KEYS.inspiration, "[]"), []) || [];
+      state.totalBudget = parseFloat(lsGet(KEYS.totalBudget, "0")) || 0;
+      state.diy = safeJson(lsGet(KEYS.diy, "[]"), []) || [];
+      state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
+
+      // Normalize tasks for delegation fields (older saves)
+      state.tasks = state.tasks.map(t => ({
+        ...t,
+        priority: (t.priority || "medium").toLowerCase(),
+        delegated: !!t.delegated,
+        delegationId: t.delegationId ?? null
+      }));
+    }
+
+    function save(key){
+      switch(key){
+        case "activeTab": lsSet(KEYS.activeTab, state.activeTab); break;
+        case "expanded": lsSet(KEYS.expanded, JSON.stringify(state.expanded)); break;
+        case "tasks": lsSet(KEYS.tasks, JSON.stringify(state.tasks)); break;
+        case "budget": lsSet(KEYS.budget, JSON.stringify(state.budget)); break;
+        case "vendors": lsSet(KEYS.vendors, JSON.stringify(state.vendors)); break;
+        case "guests": lsSet(KEYS.guests, JSON.stringify(state.guests)); break;
+        case "timeline": lsSet(KEYS.timeline, JSON.stringify(state.timeline)); break;
+        case "shopping": lsSet(KEYS.shopping, JSON.stringify(state.shopping)); break;
+        case "delegation": lsSet(KEYS.delegation, JSON.stringify(state.delegation)); break;
+        case "inspiration": lsSet(KEYS.inspiration, JSON.stringify(state.inspiration)); break;
+        case "totalBudget": lsSet(KEYS.totalBudget, String(state.totalBudget)); break;
+        case "diy": lsSet(KEYS.diy, JSON.stringify(state.diy)); break;
+        case "budgetCats": lsSet(KEYS.budgetCats, JSON.stringify(state.budgetCats)); break;
+      }
+    }
+
+    /**********************
+     * Helpers            *
+     **********************/
+    function escapeHtml(str){
+      return String(str ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function el(html){
+      const t = document.createElement("template");
+      t.innerHTML = html.trim();
+      return t.content.firstElementChild;
+    }
+    function money(n){ return (Number(n)||0).toFixed(2); }
+
+    
+  // Priority UI state for "Add New Task"
+  let newTaskPriority = "medium";
+
+  function nextPriority(cur){
+    const c = (cur || "medium").toLowerCase();
+    if(c === "high") return "medium";
+    if(c === "medium") return "low";
+    return "high";
+  }
+
+  // Highlight the selected priority pill in the "Add New Task" row
+  function setNewTaskPriorityUI(root, priority){
+    if(!root) return;
+    const norm = (priority || "medium").toLowerCase();
+    root.querySelectorAll("[data-newtask-priority]").forEach(p => {
+      const val = (p.dataset.val || "").toLowerCase();
+      p.classList.toggle("selected", val === norm);
+    });
+  }
+
+  // Wire click handlers for the "Add New Task" priority pills (safe to call on each render)
+  function wireNewTaskPriorityPills(addCard){
+    if(!addCard) return;
+    const wrap = addCard.querySelector("[data-newtask-priority-wrap]");
+    if(!wrap) return;
+
+    if(wrap.dataset.wired === "true"){
+      setNewTaskPriorityUI(addCard, newTaskPriority);
+      return;
+    }
+    wrap.dataset.wired = "true";
+
+    wrap.querySelectorAll("[data-newtask-priority]").forEach(p => {
+      p.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        newTaskPriority = (p.dataset.val || "medium").toLowerCase();
+        setNewTaskPriorityUI(addCard, newTaskPriority);
+      });
+    });
+
+    setNewTaskPriorityUI(addCard, newTaskPriority);
+  }
+
+    // progress
+    function getProgressForCategory(category){
+      const catTasks = state.tasks.filter(t => t.category === category);
+      const completed = catTasks.filter(t => t.done).length;
+      return catTasks.length ? Math.round((completed/catTasks.length)*100) : 0;
+    }
+    function totalProgress(){
+      return state.tasks.length
+        ? Math.round((state.tasks.filter(t=>t.done).length / state.tasks.length)*100)
+        : 0;
+    }
+    function diyProgress(){
+      return state.diy.length
+        ? Math.round((state.diy.filter(d=>d.done).length / state.diy.length)*100)
+        : 0;
+    }
+
+    /**********************
+     * Confirm modal      *
+     **********************/
+    const confirmOverlay = document.getElementById("confirmOverlay");
+    const confirmCancel = document.getElementById("confirmCancel");
+    const confirmOk = document.getElementById("confirmOk");
+    const confirmBody = document.getElementById("confirmBody");
+    let confirmResolve = null;
+
+    function confirmDialog(message){
+      confirmBody.textContent = message;
+      confirmOverlay.classList.add("show");
+      return new Promise((resolve)=>{ confirmResolve = resolve; });
+    }
+    function closeConfirm(result){
+      confirmOverlay.classList.remove("show");
+      if(confirmResolve){ confirmResolve(result); confirmResolve = null; }
+    }
+    confirmCancel.addEventListener("click", ()=>closeConfirm(false));
+    confirmOk.addEventListener("click", ()=>closeConfirm(true));
+    confirmOverlay.addEventListener("click", (e)=>{ if(e.target===confirmOverlay) closeConfirm(false); });
+
+    /**********************
+     * Delegation logic   *
+     **********************/
+    function ensureDelegationFromTask(task){
+      const existing = task.delegationId ? state.delegation.find(d => d.id === task.delegationId) : null;
+      if(existing) return;
+
+      const newId = Date.now();
+      state.delegation.push({
+        id: newId,
+        taskId: task.id,
+        task: task.task,
+        category: task.category,
+        person: "",        // required (flag)
+        status: "pending"
+      });
+      task.delegated = true;
+      task.delegationId = newId;
+
+      save("delegation");
+      save("tasks");
+    }
+
+    function removeDelegationForTask(task){
+      if(task.delegationId){
+        state.delegation = state.delegation.filter(d => d.id !== task.delegationId);
+        save("delegation");
+      }
+      task.delegated = false;
+      task.delegationId = null;
+      save("tasks");
+    }
+
+    /**********************
+     * Tabs               *
+     **********************/
+    const tabs = [
+      { id:'tasks', name:'Tasks', icon:'✅' },
+      { id:'budget', name:'Budget', icon:'💵' },
+      { id:'vendors', name:'Vendors', icon:'📞' },
+      { id:'guests', name:'Guest List', icon:'👥' },
+      { id:'timeline', name:'Timeline', icon:'⏰' },
+      { id:'shopping', name:'Shopping', icon:'🛒' },
+      { id:'delegation', name:'Delegation', icon:'👤' },
+      { id:'diy', name:'DIY List', icon:'🛠️' },     // ADDED (not replacing)
+      { id:'inspiration', name:'Inspiration', icon:'💡' }
+      ];
+
+    function renderTabs(){
+      const row = document.getElementById("tabsRow");
+      row.innerHTML = "";
+      tabs.forEach(t=>{
+        const b = el(`
+          <button class="tabBtn ${state.activeTab===t.id ? "active":""}" type="button">
+            <span aria-hidden="true">${t.icon}</span>
+            <span>${t.name}</span>
+          </button>
+        `);
+        b.addEventListener("click", ()=>{
+          state.activeTab = t.id;
+          save("activeTab");
+          render();
+        });
+        row.appendChild(b);
+      });
+    }
+
+    /**********************
+     * Renders            *
+     **********************/
+    function renderTasksTab(){
+      const wrap = document.createElement("div");
+
+      // overall progress card
+      const pct = totalProgress();
+      const done = state.tasks.filter(t=>t.done).length;
+
+      wrap.appendChild(el(`
+        <div class="mb-8 p-6 card shadow-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">Overall Progress</h2>
+            <span class="text-2xl font-bold" style="color:var(--ink)">${pct}%</span>
+          </div>
+          <div class="w-full progress-outer h-3">
+            <div class="progress-inner" style="width:${pct}%"></div>
+          </div>
+          <p class="text-sm text-gray-600" style="margin:8px 0 0;">${done} of ${state.tasks.length} tasks completed</p>
+        </div>
+      `));
+
+      // add task
+      const addCard = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add New Task</h3>
+          <div class="add-task-row" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <select id="newTaskCategory" style="min-width:220px;border-color:var(--taupe);">
+              <option value="">Select category...</option>
+              ${categories.map(c=>`<option value="${escapeHtml(c.name)}">${escapeHtml(c.name)}</option>`).join("")}
+            </select>
+            <input id="newTaskText" type="text" placeholder="Task description..." style="flex:1;min-width:220px;border-color:var(--taupe);" />
+            
+            <div data-newtask-priority-wrap style="display:flex;gap:6px;align-items:center;">
+              <span class="priority-pill priority-high" data-newtask-priority data-val="high">High</span>
+              <span class="priority-pill priority-medium" data-newtask-priority data-val="medium">Medium</span>
+              <span class="priority-pill priority-low" data-newtask-priority data-val="low">Low</span>
+            </div>
+            <button id="addTaskBtn" class="btn-primary btn-icon" type="button" title="Add">＋</button>
+          </div>
+        </div>
+      `);
+      addCard.querySelector("#addTaskBtn").addEventListener("click", ()=>{
+        const cat = addCard.querySelector("#newTaskCategory").value.trim();
+        const text = addCard.querySelector("#newTaskText").value.trim();
+        if(!cat || !text) return;
+
+        state.tasks.push({
+          id: Date.now(),
+          category: cat,
+          task: text,
+          done:false,
+          priority: (newTaskPriority || "medium").toLowerCase(),
+          delegated:false,
+          delegationId:null
+        });
+
+        save("tasks");
+
+        // reset inputs + priority UI
+        addCard.querySelector("#newTaskCategory").value = "";
+        addCard.querySelector("#newTaskText").value = "";
+        newTaskPriority = "medium";
+        setNewTaskPriorityUI(addCard, "medium");
+
+        render();
+      });
+      addCard.querySelector("#newTaskText").addEventListener("keydown", (e)=>{
+        if(e.key==="Enter") addCard.querySelector("#addTaskBtn").click();
+      });
+      wrap.appendChild(addCard);
+      wireNewTaskPriorityPills(addCard);
+
+      // categories list
+      const catsRoot = el(`<div class="space-y-4"></div>`);
+
+      categories.forEach(cat=>{
+        const catTasks = state.tasks.filter(t=>t.category===cat.name);
+        const prog = getProgressForCategory(cat.name);
+        const expanded = state.expanded[cat.name] !== false;
+
+        const card = el(`
+          <div class="card shadow-sm overflow-hidden">
+            <button class="cat-header hover-bg" type="button">
+              <div class="cat-left">
+                <span class="chev" aria-hidden="true">${expanded ? "▾" : "▸"}</span>
+                <div style="flex:1;text-align:left;">
+                  <div class="cat-title">${escapeHtml(cat.name)}</div>
+                  <div class="items-center gap-3" style="display:flex;margin-top:10px;">
+                    <div class="w-full progress-outer h-2">
+                      <div class="progress-inner" style="height:8px;background:${cat.color};width:${prog}%"></div>
+                    </div>
+                    <span class="text-sm text-gray-600 min-w-12">${prog}%</span>
+                  </div>
+                </div>
+              </div>
+              <span class="badge" style="background:${cat.color};color:${cat.textColor};">
+                ${catTasks.filter(t=>t.done).length}/${catTasks.length}
+              </span>
+            </button>
+            <div class="border-t border-gray-100 ${expanded && catTasks.length ? "" : "hidden"}" data-body="1"></div>
+          </div>
+        `);
+
+        card.querySelector(".cat-header").addEventListener("click", ()=>{
+          state.expanded[cat.name] = !(state.expanded[cat.name] ?? true);
+          save("expanded");
+          render();
+        });
+
+        const body = card.querySelector('[data-body="1"]');
+
+        catTasks.forEach(task=>{
+          const row = el(`
+            <div class="task-row hover-bg">
+              <button class="icon-btn" type="button" title="Toggle complete">
+                <span class="checkboxDot ${task.done ? "done":""}">${task.done ? "✓":""}</span>
+              </button>
+
+              <div class="task-text">
+                <div class="${task.done ? "line-through text-gray-400" : "text-gray-700"}">${escapeHtml(task.task)}</div>
+
+                <!-- ADDED: Delegate checkbox (does not replace anything else) -->
+                <label class="delegateWrap">
+                  <input type="checkbox" ${task.delegated ? "checked":""} />
+                  <span>Delegate</span>
+                  ${task.delegated ? `<span class="flag">(needs a name)</span>` : ""}
+                </label>
+              </div>
+
+              <span class="priority-pill priority-${(task.priority||"medium").toLowerCase()}" data-action="prio" data-id="${task.id}">${((task.priority||"medium").toLowerCase()).charAt(0).toUpperCase()+((task.priority||"medium").toLowerCase()).slice(1)}</span>
+
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+          `);
+
+          // toggle done
+          row.querySelectorAll("button")[0].addEventListener("click", ()=>{
+            state.tasks = state.tasks.map(t => t.id===task.id ? ({...t, done:!t.done}) : t);
+            save("tasks");
+            render();
+          });
+
+          // delegate checkbox behavior
+          const delCb = row.querySelector('input[type="checkbox"]');
+          delCb.addEventListener("click", async (e)=>{
+            e.preventDefault(); // we handle the toggle ourselves
+            const tRef = state.tasks.find(t=>t.id===task.id);
+            if(!tRef) return;
+
+            if(!tRef.delegated){
+              ensureDelegationFromTask(tRef); // auto-populate delegation tab
+              render();
+              return;
+            } else {
+              const ok = await confirmDialog("If you uncheck “Delegate,” this item will be removed from the Delegation tab.");
+              if(!ok){ render(); return; }
+              removeDelegationForTask(tRef);
+              render();
+              return;
+            }
+          });
+
+          // priority pill (click to cycle)
+          const priPill = row.querySelector('[data-action="prio"]');
+          if(priPill){
+            priPill.addEventListener("click", (e)=>{
+              e.stopPropagation();
+              const tRef = state.tasks.find(t=>t.id===task.id);
+              const cur = (tRef?.priority || "medium").toLowerCase();
+              const next = nextPriority(cur);
+              state.tasks = state.tasks.map(t => t.id===task.id ? ({...t, priority: next}) : t);
+              save("tasks");
+              render();
+            });
+          }
+
+          // delete task (also removes delegation if linked)
+          row.querySelectorAll("button")[1].addEventListener("click", ()=>{
+            const tRef = state.tasks.find(t=>t.id===task.id);
+            if(tRef?.delegated) removeDelegationForTask(tRef);
+            state.tasks = state.tasks.filter(t=>t.id!==task.id);
+            save("tasks");
+            render();
+          });
+
+          body.appendChild(row);
+        });
+
+        catsRoot.appendChild(card);
+      });
+
+      wrap.appendChild(catsRoot);
+      return wrap;
+    }
+
+    function renderBudgetTab(){
+      const wrap = document.createElement("div");
+
+      const totalSpent = state.budget.reduce((sum, item)=>sum + (parseFloat(item.amount)||0), 0);
+      const remaining = state.totalBudget - totalSpent;
+      const usedPct = state.totalBudget > 0 ? Math.round((totalSpent / state.totalBudget) * 100) : 0;
+
+      wrap.appendChild(el(`
+        <div class="mb-6 p-6 card shadow-sm">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">Budget Overview</h2>
+              <p class="text-sm text-gray-600" style="margin:6px 0 0;">Track your wedding expenses</p>
+            </div>
+            <div class="text-right">
+              <input id="totalBudgetInput" type="number" value="${state.totalBudget || ""}" placeholder="Total budget"
+                     style="font-size:24px;font-weight:800;text-align:right;border-bottom:2px solid var(--taupe);border-radius:0;padding:6px 2px;width:160px;" />
+              <div class="text-sm text-gray-600" style="margin-top:6px;">Total Budget</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-4 mt-4" style="margin-top:16px;">
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">Spent</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(totalSpent)}</div>
+            </div>
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">Remaining</div>
+              <div class="text-2xl font-bold ${remaining < 0 ? "text-red-600":""}" style="${remaining>=0 ? "color:var(--sage);" : ""}">
+                $${money(remaining)}
+              </div>
+            </div>
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">% Used</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">${usedPct}%</div>
+            </div>
+          </div>
+
+          <div class="w-full progress-outer h-3 mt-4" style="margin-top:16px;">
+            <div class="progress-inner" style="background:${remaining<0 ? "#DC2626" : "var(--rose)"}; width:${Math.min(usedPct,100)}%"></div>
+          </div>
+        </div>
+      `));
+
+      // Add expense (CATEGORY DROPDOWN)
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Expense</h3>
+          <div class="grid grid-cols-4 gap-2">
+            <select id="bCategory"></select>
+            <input id="bItem" type="text" placeholder="Item" />
+            <input id="bAmount" type="number" step="0.01" placeholder="Amount" />
+            <button id="bAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+
+      const catSelect = add.querySelector("#bCategory");
+      catSelect.innerHTML =
+        `<option value="">Select category...</option>` +
+        state.budgetCats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("");
+
+      add.querySelector("#bAdd").addEventListener("click", ()=>{
+        const category = add.querySelector("#bCategory").value.trim();
+        const item = add.querySelector("#bItem").value.trim();
+        const amount = add.querySelector("#bAmount").value.trim();
+        if(!category || !item || !amount) return;
+
+        state.budget.push({ id: Date.now(), category, item, amount: parseFloat(amount)||0, paid:false });
+        save("budget");
+        render();
+      });
+
+      // total budget save
+      const tb = wrap.querySelector("#totalBudgetInput");
+      tb.addEventListener("input", (e)=>{
+        state.totalBudget = parseFloat(e.target.value)||0;
+        save("totalBudget");
+        render();
+      });
+
+      wrap.appendChild(add);
+
+      const table = el(`
+        <div class="card shadow-sm overflow-hidden">
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th>Item</th>
+                  <th class="right">Amount</th>
+                  <th class="center">Paid</th>
+                  <th style="width:60px"></th>
+                </tr>
+              </thead>
+              <tbody id="budgetBody"></tbody>
+            </table>
+          </div>
+        </div>
+      `);
+
+      const body = table.querySelector("#budgetBody");
+      state.budget.forEach(item=>{
+        const tr = el(`
+          <tr>
+            <td>${escapeHtml(item.category)}</td>
+            <td>${escapeHtml(item.item)}</td>
+            <td class="right">$${money(item.amount)}</td>
+            <td class="center"><input type="checkbox" ${item.paid ? "checked":""} style="width:auto" /></td>
+            <td class="center"><button class="icon-btn" type="button" title="Delete">🗑️</button></td>
+          </tr>
+        `);
+
+        tr.querySelector('input[type="checkbox"]').addEventListener("change", ()=>{
+          state.budget = state.budget.map(b => b.id===item.id ? ({...b, paid:!b.paid}) : b);
+          save("budget");
+          render();
+        });
+
+        tr.querySelector("button").addEventListener("click", ()=>{
+          state.budget = state.budget.filter(b => b.id!==item.id);
+          save("budget");
+          render();
+        });
+
+        body.appendChild(tr);
+      });
+
+      wrap.appendChild(table);
+      return wrap;
+    }
+
+    function renderVendorsTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Vendor</h3>
+          <div class="grid grid-cols-4 gap-2">
+            <input id="vName" type="text" placeholder="Vendor name" />
+            <input id="vService" type="text" placeholder="Service" />
+            <input id="vContact" type="text" placeholder="Contact" />
+            <input id="vPhone" type="text" placeholder="Phone" />
+          </div>
+          <div class="mt-4" style="margin-top:12px;">
+            <button id="vAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#vAdd").addEventListener("click", ()=>{
+        const name = add.querySelector("#vName").value.trim();
+        const service = add.querySelector("#vService").value.trim();
+        const contact = add.querySelector("#vContact").value.trim();
+        const phone = add.querySelector("#vPhone").value.trim();
+        if(!name || !service) return;
+        state.vendors.push({ id: Date.now(), name, service, contact, phone, notes:"" });
+        save("vendors");
+        render();
+      });
+      wrap.appendChild(add);
+
+      if(!state.vendors.length){
+        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No vendors added yet.</div>`));
+        return wrap;
+      }
+
+      const list = el(`<div class="space-y-3"></div>`);
+      state.vendors.forEach(v=>{
+        const card = el(`
+          <div class="p-4 card shadow-sm">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+              <div>
+                <div class="text-lg font-semibold" style="color:var(--ink)">${escapeHtml(v.name)}</div>
+                <div class="text-sm text-gray-600">${escapeHtml(v.service)}</div>
+              </div>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+            <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:10px;">
+              <div><span class="font-semibold">Contact:</span> ${escapeHtml(v.contact||"")}</div>
+              <div><span class="font-semibold">Phone:</span> ${escapeHtml(v.phone||"")}</div>
+            </div>
+            <textarea rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;">${escapeHtml(v.notes||"")}</textarea>
+          </div>
+        `);
+
+        card.querySelector("button").addEventListener("click", ()=>{
+          state.vendors = state.vendors.filter(x => x.id!==v.id);
+          save("vendors");
+          render();
+        });
+
+        card.querySelector("textarea").addEventListener("input", (e)=>{
+          state.vendors = state.vendors.map(x => x.id===v.id ? ({...x, notes:e.target.value}) : x);
+          save("vendors");
+        });
+
+        list.appendChild(card);
+      });
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function renderGuestsTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <div class="grid grid-cols-5 gap-2">
+            <input id="gName" type="text" placeholder="Name" />
+            <input id="gParty" type="number" placeholder="Party size" />
+            <input id="gTable" type="text" placeholder="Table" />
+            <select id="gThanks">
+              <option value="no">Thank you: No</option>
+              <option value="yes">Thank you: Yes</option>
+            </select>
+            <button id="gAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#gAdd").addEventListener("click", ()=>{
+        const name = add.querySelector("#gName").value.trim();
+        const party = parseInt(add.querySelector("#gParty").value,10) || 1;
+        const table = add.querySelector("#gTable").value.trim();
+        const thankYou = add.querySelector("#gThanks").value === "yes";
+        if(!name) return;
+        state.guests.push({ id: Date.now(), name, partySize: party, table, thankYou });
+        save("guests");
+        render();
+      });
+      wrap.appendChild(add);
+
+      const table = el(`
+        <div class="card shadow-sm overflow-hidden">
+          <div class="tableWrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th class="center">Party Size</th>
+                  <th class="center">Table</th>
+                  <th class="center">Thank You</th>
+                  <th style="width:60px"></th>
+                </tr>
+              </thead>
+              <tbody id="gBody"></tbody>
+            </table>
+          </div>
+        </div>
+      `);
+
+      const body = table.querySelector("#gBody");
+      state.guests.forEach(g=>{
+        const tr = el(`
+          <tr>
+            <td>${escapeHtml(g.name)}</td>
+            <td class="center">${g.partySize}</td>
+            <td class="center"><input type="text" value="${escapeHtml(g.table||"")}" style="max-width:110px;margin:0 auto" /></td>
+            <td class="center"><input type="checkbox" ${g.thankYou ? "checked":""} style="width:auto" /></td>
+            <td class="center"><button class="icon-btn" type="button" title="Delete">🗑️</button></td>
+          </tr>
+        `);
+
+        const tableInput = tr.querySelector('input[type="text"]');
+        const thanksCb = tr.querySelector('input[type="checkbox"]');
+        const delBtn = tr.querySelector('button');
+
+        tableInput.addEventListener("input", (e)=>{
+          state.guests = state.guests.map(x => x.id===g.id ? ({...x, table:e.target.value}) : x);
+          save("guests");
+        });
+        thanksCb.addEventListener("change", ()=>{
+          state.guests = state.guests.map(x => x.id===g.id ? ({...x, thankYou:!x.thankYou}) : x);
+          save("guests");
+          render();
+        });
+        delBtn.addEventListener("click", ()=>{
+          state.guests = state.guests.filter(x => x.id!==g.id);
+          save("guests");
+          render();
+        });
+
+        body.appendChild(tr);
+      });
+
+      wrap.appendChild(table);
+      return wrap;
+    }
+
+    function renderTimelineTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <div class="grid grid-cols-3 gap-2">
+            <input id="tTime" type="time" />
+            <input id="tEvent" type="text" placeholder="Event" />
+            <button id="tAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#tAdd").addEventListener("click", ()=>{
+        const time = add.querySelector("#tTime").value;
+        const event = add.querySelector("#tEvent").value.trim();
+        if(!time || !event) return;
+        state.timeline.push({ id: Date.now(), time, event });
+        save("timeline");
+        render();
+      });
+      wrap.appendChild(add);
+
+      const list = el(`<div class="p-4 card shadow-sm"></div>`);
+      const sorted = [...state.timeline].sort((a,b)=>String(a.time).localeCompare(String(b.time)));
+      if(!sorted.length){
+        list.appendChild(el(`<div class="text-sm text-gray-600">No timeline items yet.</div>`));
+      } else {
+        sorted.forEach(t=>{
+          const row = el(`
+            <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+              <span class="text-sm font-semibold" style="color:var(--ink);min-width:70px">${escapeHtml(t.time)}</span>
+              <span class="text-sm" style="flex:1">${escapeHtml(t.event)}</span>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+          `);
+          row.querySelector("button").addEventListener("click", ()=>{
+            state.timeline = state.timeline.filter(x => x.id!==t.id);
+            save("timeline");
+            render();
+          });
+          list.appendChild(row);
+        });
+        list.lastElementChild.style.borderBottom = "0";
+      }
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function renderDIYTab(){
+      const wrap = document.createElement("div");
+
+      const pct = diyProgress();
+      const done = state.diy.filter(d=>d.done).length;
+
+      wrap.appendChild(el(`
+        <div class="mb-6 p-6 card shadow-sm">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div>
+              <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">DIY List</h2>
+              <p class="text-sm text-gray-600" style="margin:6px 0 0;">Add DIY projects. These become dropdown options in Shopping.</p>
+            </div>
+            <div class="text-2xl font-bold" style="color:var(--ink)">${pct}%</div>
+          </div>
+          <div class="w-full progress-outer h-3" style="margin-top:12px;">
+            <div class="progress-inner" style="width:${pct}%"></div>
+          </div>
+          <p class="text-sm text-gray-600" style="margin:8px 0 0;">${done} of ${state.diy.length} DIY items completed</p>
+        </div>
+      `));
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add DIY Item</h3>
+          <div class="grid grid-cols-4 gap-2">
+            <input id="dTitle" type="text" placeholder="DIY item (e.g., Centerpieces, signage, favors...)" class="col-span-3" />
+            <button id="dAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#dAdd").addEventListener("click", ()=>{
+        const title = add.querySelector("#dTitle").value.trim();
+        if(!title) return;
+        state.diy.push({ id: Date.now(), title, done:false });
+        save("diy");
+        add.querySelector("#dTitle").value = "";
+        render();
+      });
+      add.querySelector("#dTitle").addEventListener("keydown", (e)=>{
+        if(e.key==="Enter") add.querySelector("#dAdd").click();
+      });
+      wrap.appendChild(add);
+
+      if(!state.diy.length){
+        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No DIY items yet.</div>`));
+        return wrap;
+      }
+
+      const list = el(`<div class="space-y-3"></div>`);
+      state.diy.forEach(d=>{
+        const card = el(`
+          <div class="p-4 card shadow-sm">
+            <div style="display:flex;gap:12px;align-items:flex-start;">
+              <button class="icon-btn" type="button" title="Toggle complete">
+                <span class="checkboxDot ${d.done ? "done":""}">${d.done ? "✓":""}</span>
+              </button>
+              <div style="flex:1;">
+                <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+              </div>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+          </div>
+        `);
+
+        card.querySelectorAll("button")[0].addEventListener("click", ()=>{
+          state.diy = state.diy.map(x => x.id===d.id ? ({...x, done:!x.done}) : x);
+          save("diy");
+          render();
+        });
+
+        card.querySelectorAll("button")[1].addEventListener("click", ()=>{
+          // clear DIY links in shopping
+          state.shopping = state.shopping.map(s => s.diyId===d.id ? ({...s, diyId:null}) : s);
+          save("shopping");
+          state.diy = state.diy.filter(x => x.id!==d.id);
+          save("diy");
+          render();
+        });
+
+        list.appendChild(card);
+      });
+
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function renderShoppingTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Shopping Item</h3>
+          <div class="grid grid-cols-4 gap-2">
+            <input id="sItem" type="text" placeholder="Item" class="col-span-2" />
+            <input id="sQty" type="text" placeholder="Qty" />
+            <input id="sPrice" type="number" step="0.01" placeholder="Price" />
+            <!-- ADDED: DIY dropdown to match shopping to DIY -->
+            <select id="sDIY" class="col-span-2">
+              <option value="">Match to DIY item (optional)...</option>
+            </select>
+            <button id="sAdd" class="btn-primary col-span-2" type="button">Add</button>
+          </div>
+        </div>
+      `);
+
+      const sDIY = add.querySelector("#sDIY");
+      state.diy.forEach(d=>{
+        sDIY.appendChild(el(`<option value="${d.id}">${escapeHtml(d.title)}</option>`));
+      });
+
+      add.querySelector("#sAdd").addEventListener("click", ()=>{
+        const item = add.querySelector("#sItem").value.trim();
+        const qty = add.querySelector("#sQty").value.trim();
+        const price = add.querySelector("#sPrice").value.trim();
+        const diyId = add.querySelector("#sDIY").value ? Number(add.querySelector("#sDIY").value) : null;
+        if(!item) return;
+        state.shopping.push({
+          id: Date.now(),
+          item, qty,
+          price: price ? (parseFloat(price)||0) : null,
+          purchased:false,
+          diyId
+        });
+        save("shopping");
+        render();
+      });
+
+      wrap.appendChild(add);
+
+      if(!state.shopping.length){
+        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No shopping items yet.</div>`));
+        return wrap;
+      }
+
+      const list = el(`<div class="space-y-3"></div>`);
+      state.shopping.forEach(s=>{
+        const diyTitle = s.diyId ? (state.diy.find(d=>d.id===s.diyId)?.title || "(DIY item deleted)") : "";
+
+        const card = el(`
+          <div class="p-4 card shadow-sm">
+            <div style="display:flex;align-items:flex-start;gap:12px;">
+              <input type="checkbox" ${s.purchased ? "checked":""} style="width:auto;margin-top:4px" />
+              <div style="flex:1;">
+                <div class="${s.purchased ? "line-through text-gray-400":"text-gray-700"} font-semibold">
+                  ${escapeHtml(s.item)} ${s.qty ? `<span class="text-sm text-gray-600">(${escapeHtml(s.qty)})</span>` : ""}
+                </div>
+                <div class="text-xs text-gray-600" style="margin-top:6px;">
+                  ${diyTitle ? `DIY: <span class="font-semibold" style="color:var(--ink)">${escapeHtml(diyTitle)}</span>` : "DIY: —"}
+                </div>
+              </div>
+              <div class="text-right" style="min-width:90px;">
+                <div class="text-sm text-gray-600">${s.price!==null ? "$"+money(s.price) : ""}</div>
+              </div>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+
+            <div class="mt-4" style="margin-top:12px;">
+              <select class="w-full">
+                <option value="">Match to DIY item (optional)...</option>
+                ${state.diy.map(d=>`<option value="${d.id}">${escapeHtml(d.title)}</option>`).join("")}
+              </select>
+            </div>
+          </div>
+        `);
+
+        const purchased = card.querySelector('input[type="checkbox"]');
+        const delBtn = card.querySelector('button');
+        const diySelect = card.querySelector('select');
+
+        diySelect.value = s.diyId ?? "";
+
+        purchased.addEventListener("change", ()=>{
+          state.shopping = state.shopping.map(x => x.id===s.id ? ({...x, purchased:!x.purchased}) : x);
+          save("shopping");
+          render();
+        });
+
+        diySelect.addEventListener("change", (e)=>{
+          const val = e.target.value ? Number(e.target.value) : null;
+          state.shopping = state.shopping.map(x => x.id===s.id ? ({...x, diyId:val}) : x);
+          save("shopping");
+          render();
+        });
+
+        delBtn.addEventListener("click", ()=>{
+          state.shopping = state.shopping.filter(x => x.id!==s.id);
+          save("shopping");
+          render();
+        });
+
+        list.appendChild(card);
+      });
+
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function renderDelegationTab(){
+      const wrap = document.createElement("div");
+
+      wrap.appendChild(el(`
+        <div class="mb-6 p-6 card shadow-sm">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">Delegation</h2>
+              <p class="text-sm text-gray-600" style="margin:6px 0 0;">Items appear here when you check “Delegate” on a task.</p>
+            </div>
+            <div class="p-4 rounded-lg" style="background:var(--bg);border:1px solid rgba(199,189,180,.5);">
+              <div class="text-xs text-gray-600">Needs a name</div>
+              <div class="text-2xl font-bold" style="color:#B45309;margin-top:4px;">
+                ${state.delegation.filter(d=>!d.person.trim()).length}
+              </div>
+            </div>
+          </div>
+        </div>
+      `));
+
+      if(!state.delegation.length){
+        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No delegated items yet. Use the Delegate checkbox on the Tasks tab.</div>`));
+        return wrap;
+      }
+
+      const list = el(`<div class="space-y-3"></div>`);
+      state.delegation.forEach(d=>{
+        const needsName = !d.person.trim();
+
+        const card = el(`
+          <div class="p-4 card shadow-sm">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+              <div style="flex:1;">
+                <div class="text-sm text-gray-600">${escapeHtml(d.category||"")}</div>
+                <div class="text-lg font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(d.task)}</div>
+              </div>
+              <button class="icon-btn" type="button" title="Remove delegation">🗑️</button>
+            </div>
+
+            <div class="mt-4 grid grid-cols-3 gap-2" style="margin-top:12px;">
+              <input type="text" placeholder="Assign to (name)..." value="${escapeHtml(d.person)}" />
+              <select>
+                <option value="pending">Pending</option>
+                <option value="in-progress">In Progress</option>
+                <option value="complete">Complete</option>
+              </select>
+              <div class="text-sm" style="display:flex;align-items:center;justify-content:flex-end;">
+                ${needsName ? `<span class="flag">Needs a name</span>` : `<span style="color:var(--sage);font-weight:800;">Assigned</span>`}
+              </div>
+            </div>
+          </div>
+        `);
+
+        const removeBtn = card.querySelector("button");
+        const nameInput = card.querySelector('input[type="text"]');
+        const statusSel = card.querySelector("select");
+
+        statusSel.value = d.status || "pending";
+
+        nameInput.addEventListener("input", (e)=>{
+          state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, person:e.target.value}) : x);
+          save("delegation");
+          render();
+        });
+
+        statusSel.addEventListener("change", (e)=>{
+          state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, status:e.target.value}) : x);
+          save("delegation");
+        });
+
+        removeBtn.addEventListener("click", async ()=>{
+          const task = state.tasks.find(t => t.id===d.taskId);
+          const ok = await confirmDialog("Remove this delegation and uncheck “Delegate” on the task?");
+          if(!ok) return;
+          if(task) removeDelegationForTask(task);
+          else {
+            state.delegation = state.delegation.filter(x => x.id!==d.id);
+            save("delegation");
+          }
+          render();
+        });
+
+        list.appendChild(card);
+      });
+
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    function renderInspirationTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Inspiration</h3>
+          <div class="grid grid-cols-3 gap-2">
+            <input id="iTitle" type="text" placeholder="Title" />
+            <input id="iLink" type="text" placeholder="Link/Note" />
+            <button id="iAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#iAdd").addEventListener("click", ()=>{
+        const title = add.querySelector("#iTitle").value.trim();
+        const link = add.querySelector("#iLink").value.trim();
+        if(!title) return;
+        state.inspiration.push({ id: Date.now(), title, link });
+        save("inspiration");
+        render();
+      });
+      wrap.appendChild(add);
+
+      if(!state.inspiration.length){
+        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No inspiration saved yet.</div>`));
+        return wrap;
+      }
+
+      const list = el(`<div class="space-y-3"></div>`);
+      state.inspiration.forEach(i=>{
+        const card = el(`
+          <div class="p-4 card shadow-sm">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+              <div style="flex:1;">
+                <div class="font-semibold" style="color:var(--ink)">${escapeHtml(i.title)}</div>
+                ${i.link ? `<div class="text-xs" style="margin-top:6px;word-break:break-word;"><a href="${escapeHtml(i.link)}" target="_blank" rel="noopener noreferrer">${escapeHtml(i.link)}</a></div>` : ""}
+              </div>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+          </div>
+        `);
+        card.querySelector("button").addEventListener("click", ()=>{
+          state.inspiration = state.inspiration.filter(x => x.id!==i.id);
+          save("inspiration");
+          render();
+        });
+        list.appendChild(card);
+      });
+
+      wrap.appendChild(list);
+      return wrap;
+    }
+
+    /**********************
+     * Main render        *
+     **********************/
+    function render(){
+      renderTabs();
+      const root = document.getElementById("content");
+      root.innerHTML = "";
+
+      if(state.activeTab === "tasks") root.appendChild(renderTasksTab());
+      else if(state.activeTab === "budget") root.appendChild(renderBudgetTab());
+      else if(state.activeTab === "vendors") root.appendChild(renderVendorsTab());
+      else if(state.activeTab === "guests") root.appendChild(renderGuestsTab());
+      else if(state.activeTab === "timeline") root.appendChild(renderTimelineTab());
+      else if(state.activeTab === "shopping") root.appendChild(renderShoppingTab());
+      else if(state.activeTab === "delegation") root.appendChild(renderDelegationTab());
+      else if(state.activeTab === "diy") root.appendChild(renderDIYTab());
+      else if(state.activeTab === "inspiration") root.appendChild(renderInspirationTab());
+      else root.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">Tab coming soon.</div>`));
+    }
+
+    /**********************
+     * Boot               *
+     **********************/
+    load();
+    save("tasks"); // persist normalization
+    render();
+  </script>
+</body>
+</html>
