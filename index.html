@@ -95,6 +95,7 @@
 
     @media (max-width: 980px){
       .grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
       .kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 720px){
@@ -1160,7 +1161,7 @@
             </div>
           </div>
 
-          <div class="grid kpi-grid gap-4 mt-4" style="margin-top:16px;">
+          <div class="grid grid-cols-4 kpi-grid gap-4 mt-4" style="margin-top:16px;">
             <div class="p-4 rounded-lg" style="background:var(--bg);">
               <div class="text-sm text-gray-600">Planned</div>
               <div class="text-2xl font-bold" style="color:var(--ink)">$${money(plannedTotal)}</div>
@@ -1184,6 +1185,7 @@
           <div class="w-full progress-outer h-3 mt-4" style="margin-top:16px;">
             <div class="progress-inner" style="background:${remaining<0 ? "#DC2626" : "var(--rose)"}; width:${Math.min(usedPct,100)}%"></div>
           </div>
+          <div class="text-sm text-gray-600" style="margin-top:8px;">${usedPct}% of total budget used</div>
         </div>
       `));
 
