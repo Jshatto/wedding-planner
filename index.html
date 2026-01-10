@@ -272,6 +272,9 @@
     .right{text-align:right}
     .center{text-align:center}
     .tableWrap{overflow:auto}
+    .container,
+    .card,
+    .tableWrap{max-width:100%}
 
     /* modal */
     .modalOverlay{
@@ -514,7 +517,40 @@
       .vendorsAddForm{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 720px){
-      .vendorsAddForm{grid-template-columns:1fr}
+    .vendorsAddForm{grid-template-columns:1fr}
+    }
+
+    .timeline-add-row{
+      display:flex;
+      gap:12px;
+      flex-wrap:wrap;
+      align-items:center;
+      width:100%;
+    }
+    .timeline-add-row input,
+    .timeline-add-row button{
+      max-width:100%;
+    }
+    .timeline-add-row input[type="time"]{
+      flex:0 0 140px;
+      max-width:100%;
+    }
+    .timeline-add-row input[type="text"]{
+      flex:1 1 260px;
+      min-width:0;
+      max-width:100%;
+    }
+    .timeline-add-row button{
+      flex:0 0 auto;
+      max-width:100%;
+    }
+    @media (max-width: 720px){
+      .timeline-add-row input[type="time"]{
+        flex:1 1 140px;
+      }
+      .timeline-add-row button{
+        width:100%;
+      }
     }
 
 </style>
@@ -1793,7 +1829,7 @@
 
       const add = el(`
         <div class="mb-6 p-4 card shadow-sm">
-          <div class="grid grid-cols-3 gap-2">
+          <div class="timeline-add-row">
             <input id="tTime" type="time" />
             <input id="tEvent" type="text" placeholder="Event" />
             <button id="tAdd" class="btn-primary" type="button">Add</button>
