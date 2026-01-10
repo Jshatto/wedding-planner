@@ -94,9 +94,13 @@
 
     @media (max-width: 980px){
       .grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .budget-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 720px){
       .grid-cols-5,.grid-cols-4,.grid-cols-3,.grid-cols-2{grid-template-columns:1fr}
+      .budget-kpi-grid{grid-template-columns:1fr}
+      .budget-total{width:100%}
+      .amount-pill{width:100%}
     }
 
     /* inputs/buttons */
@@ -151,6 +155,62 @@
       box-shadow: 0 0 0 3px rgba(214,180,188,.35);
       border-color: var(--taupe);
     }
+    .budget-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:16px;
+      flex-wrap:wrap;
+    }
+    .budget-total{
+      min-width:220px;
+    }
+    .amount-pill{
+      display:flex;
+      align-items:center;
+      gap:6px;
+      border:1px solid var(--taupe);
+      border-radius:var(--radius);
+      background:#FBF7F4;
+      padding:6px 10px;
+      width:220px;
+      max-width:100%;
+    }
+    .amount-pill span{
+      color:var(--muted);
+      font-weight:600;
+    }
+    .amount-pill input{
+      border:0;
+      padding:6px 4px;
+      width:100%;
+      min-width:0;
+      background:transparent;
+      text-align:right;
+      font-size:24px;
+      font-weight:800;
+    }
+    .amount-pill:focus-within{
+      box-shadow: 0 0 0 3px rgba(214,180,188,.35);
+      border-color: var(--taupe);
+    }
+    .budget-kpi-grid{
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+    }
+    .budget-kpi-card{
+      background:var(--bg);
+      padding:16px;
+      border-radius:var(--radius);
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+      min-height:110px;
+      justify-content:space-between;
+    }
+    .budget-kpi-label{font-size:14px;color:var(--muted)}
+    .budget-kpi-subtext{font-size:12px;color:var(--muted)}
 
     /* progress */
     .progress-outer{background:#E5E7EB;border-radius:999px;overflow:hidden}
@@ -1135,37 +1195,50 @@
         save("budget");
       }
       const totalSpent = state.budget.reduce((sum, item)=>sum + budgetItemSpent(item), 0);
+      const totalPlanned = state.budget.reduce((sum, item)=>sum + (Number(item.amount) || 0), 0);
       const remaining = state.totalBudget - totalSpent;
+      const unpaidPlanned = totalPlanned - totalSpent;
       const usedPct = state.totalBudget > 0 ? Math.round((totalSpent / state.totalBudget) * 100) : 0;
 
       wrap.appendChild(el(`
         <div class="mb-6 p-6 card shadow-sm">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+          <div class="budget-header">
             <div>
               <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">Budget Overview</h2>
               <p class="text-sm text-gray-600" style="margin:6px 0 0;">Track your wedding expenses</p>
             </div>
-            <div class="text-right">
-              <input id="totalBudgetInput" type="number" value="${state.totalBudget || ""}" placeholder="Total budget"
-                     style="font-size:24px;font-weight:800;text-align:right;border-bottom:2px solid var(--taupe);border-radius:0;padding:6px 2px;width:160px;" />
-              <div class="text-sm text-gray-600" style="margin-top:6px;">Total Budget</div>
+            <div class="budget-total">
+              <div class="text-xs text-gray-500" style="margin-bottom:6px;">Total Budget</div>
+              <div class="amount-pill">
+                <span>$</span>
+                <input id="totalBudgetInput" type="number" value="${state.totalBudget || ""}" placeholder="0.00" />
+              </div>
+              <div class="text-xs text-gray-500" style="margin-top:6px;">Used for Budget Left + % Used</div>
             </div>
           </div>
 
-          <div class="grid grid-cols-3 gap-4 mt-4" style="margin-top:16px;">
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Spent</div>
+          <div class="budget-kpi-grid" style="margin-top:16px;">
+            <div class="budget-kpi-card">
+              <div class="budget-kpi-label">Spent</div>
               <div class="text-2xl font-bold" style="color:var(--ink)">$${money(totalSpent)}</div>
+              <div class="budget-kpi-subtext">&nbsp;</div>
             </div>
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Remaining</div>
+            <div class="budget-kpi-card">
+              <div class="budget-kpi-label">Remaining</div>
               <div class="text-2xl font-bold ${remaining < 0 ? "text-red-600":""}" style="${remaining>=0 ? "color:var(--sage);" : ""}">
                 $${money(remaining)}
               </div>
+              <div class="budget-kpi-subtext">&nbsp;</div>
             </div>
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">% Used</div>
+            <div class="budget-kpi-card">
+              <div class="budget-kpi-label">Unpaid Planned</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(unpaidPlanned)}</div>
+              <div class="budget-kpi-subtext">Still owed</div>
+            </div>
+            <div class="budget-kpi-card">
+              <div class="budget-kpi-label">% Used</div>
               <div class="text-2xl font-bold" style="color:var(--ink)">${usedPct}%</div>
+              <div class="budget-kpi-subtext">&nbsp;</div>
             </div>
           </div>
 
