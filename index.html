@@ -579,6 +579,15 @@
         delegated: !!t.delegated,
         delegationId: t.delegationId ?? null
       }));
+
+      // Normalize vendor payment fields for older saves
+      state.vendors = state.vendors.map(v => ({
+        ...v,
+        quoted: Number(v.quoted) || 0,
+        deposit: Number(v.deposit) || 0,
+        amountPaid: Number(v.amountPaid) || 0,
+        dueDate: v.dueDate || ""
+      }));
     }
 
     function save(key){
@@ -616,6 +625,10 @@
       return t.content.firstElementChild;
     }
     function money(n){ return (Number(n)||0).toFixed(2); }
+    function toNumber(val){
+      const num = parseFloat(val);
+      return Number.isFinite(num) ? num : 0;
+    }
 
     
   // Priority UI state for "Add New Task"
@@ -1110,18 +1123,50 @@
             <input id="vContact" type="text" placeholder="Contact" />
             <input id="vPhone" type="text" placeholder="Phone" />
           </div>
+          <div class="grid grid-cols-5 gap-2" style="margin-top:10px;">
+            <input id="vQuoted" type="number" min="0" step="0.01" placeholder="Quoted price" />
+            <input id="vDeposit" type="number" min="0" step="0.01" placeholder="Deposit" />
+            <input id="vPaid" type="number" min="0" step="0.01" placeholder="Amount paid" />
+            <input id="vBalance" type="text" placeholder="Balance" value="$0.00" readonly />
+            <input id="vDue" type="date" placeholder="Due date" />
+          </div>
           <div class="mt-4" style="margin-top:12px;">
             <button id="vAdd" class="btn-primary" type="button">Add</button>
           </div>
         </div>
       `);
+      const quotedInput = add.querySelector("#vQuoted");
+      const paidInput = add.querySelector("#vPaid");
+      const balanceInput = add.querySelector("#vBalance");
+      const updateAddBalance = () => {
+        const quoted = toNumber(quotedInput.value);
+        const paid = toNumber(paidInput.value);
+        balanceInput.value = `$${money(quoted - paid)}`;
+      };
+      quotedInput.addEventListener("input", updateAddBalance);
+      paidInput.addEventListener("input", updateAddBalance);
       add.querySelector("#vAdd").addEventListener("click", ()=>{
         const name = add.querySelector("#vName").value.trim();
         const service = add.querySelector("#vService").value.trim();
         const contact = add.querySelector("#vContact").value.trim();
         const phone = add.querySelector("#vPhone").value.trim();
+        const quoted = toNumber(add.querySelector("#vQuoted").value);
+        const deposit = toNumber(add.querySelector("#vDeposit").value);
+        const amountPaid = toNumber(add.querySelector("#vPaid").value);
+        const dueDate = add.querySelector("#vDue").value;
         if(!name || !service) return;
-        state.vendors.push({ id: Date.now(), name, service, contact, phone, notes:"" });
+        state.vendors.push({
+          id: Date.now(),
+          name,
+          service,
+          contact,
+          phone,
+          quoted,
+          deposit,
+          amountPaid,
+          dueDate,
+          notes:""
+        });
         save("vendors");
         render();
       });
@@ -1134,6 +1179,7 @@
 
       const list = el(`<div class="space-y-3"></div>`);
       state.vendors.forEach(v=>{
+        const balance = v.quoted - v.amountPaid;
         const card = el(`
           <div class="p-4 card shadow-sm">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
@@ -1147,9 +1193,33 @@
               <div><span class="font-semibold">Contact:</span> ${escapeHtml(v.contact||"")}</div>
               <div><span class="font-semibold">Phone:</span> ${escapeHtml(v.phone||"")}</div>
             </div>
+            <div class="grid grid-cols-5 gap-2 text-sm" style="margin-top:12px;">
+              <label>
+                <div class="text-xs text-gray-500">Quoted price</div>
+                <input type="number" min="0" step="0.01" value="${escapeHtml(v.quoted)}" />
+              </label>
+              <label>
+                <div class="text-xs text-gray-500">Deposit</div>
+                <input type="number" min="0" step="0.01" value="${escapeHtml(v.deposit)}" />
+              </label>
+              <label>
+                <div class="text-xs text-gray-500">Amount paid</div>
+                <input type="number" min="0" step="0.01" value="${escapeHtml(v.amountPaid)}" />
+              </label>
+              <label>
+                <div class="text-xs text-gray-500">Balance</div>
+                <input type="text" value="$${money(balance)}" readonly />
+              </label>
+              <label>
+                <div class="text-xs text-gray-500">Due date</div>
+                <input type="date" value="${escapeHtml(v.dueDate||"")}" />
+              </label>
+            </div>
             <textarea rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;">${escapeHtml(v.notes||"")}</textarea>
           </div>
         `);
+
+        const [quotedField, depositField, paidField, balanceField, dueDateField] = card.querySelectorAll('.grid input');
 
         card.querySelector("button").addEventListener("click", ()=>{
           state.vendors = state.vendors.filter(x => x.id!==v.id);
@@ -1157,9 +1227,37 @@
           render();
         });
 
-        card.querySelector("textarea").addEventListener("input", (e)=>{
-          state.vendors = state.vendors.map(x => x.id===v.id ? ({...x, notes:e.target.value}) : x);
+        const updateVendor = (changes) => {
+          state.vendors = state.vendors.map(x => x.id===v.id ? ({...x, ...changes}) : x);
           save("vendors");
+        };
+
+        const updateBalance = (quoted, amountPaid) => {
+          balanceField.value = `$${money(quoted - amountPaid)}`;
+        };
+
+        quotedField.addEventListener("input", (e)=>{
+          const quoted = toNumber(e.target.value);
+          updateVendor({ quoted });
+          updateBalance(quoted, toNumber(paidField.value));
+        });
+
+        depositField.addEventListener("input", (e)=>{
+          updateVendor({ deposit: toNumber(e.target.value) });
+        });
+
+        paidField.addEventListener("input", (e)=>{
+          const amountPaid = toNumber(e.target.value);
+          updateVendor({ amountPaid });
+          updateBalance(toNumber(quotedField.value), amountPaid);
+        });
+
+        dueDateField.addEventListener("input", (e)=>{
+          updateVendor({ dueDate: e.target.value });
+        });
+
+        card.querySelector("textarea").addEventListener("input", (e)=>{
+          updateVendor({ notes:e.target.value });
         });
 
         list.appendChild(card);
