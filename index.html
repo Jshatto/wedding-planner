@@ -99,6 +99,7 @@
       flex-direction:column;
       justify-content:center;
       min-height:96px;
+      height:100%;
     }
 
     @media (max-width: 980px){
@@ -753,11 +754,15 @@
       return `${vendor.name}${service}`;
     }
 
+    function vendorRemainingBalance(quoted, deposit, amountPaid){
+      return Math.max((Number(quoted) || 0) - (Number(deposit) || 0) - (Number(amountPaid) || 0), 0);
+    }
+
     function buildVendorBudgetItem(vendor){
       const quoted = Number(vendor.quoted) || 0;
       const deposit = Number(vendor.deposit) || 0;
       const paidAmount = Number(vendor.amountPaid) || 0;
-      const remaining = Math.max(quoted - deposit - paidAmount, 0);
+      const remaining = vendorRemainingBalance(quoted, deposit, paidAmount);
       return {
         source: "vendor",
         vendorId: vendor.id,
@@ -1397,6 +1402,7 @@
       `);
       const quotedInput = add.querySelector("#vQuoted");
       const paidInput = add.querySelector("#vPaid");
+      const depositInput = add.querySelector("#vDeposit");
       const balanceHelp = add.querySelector("#vBalanceHelp");
       const includeToggle = add.querySelector("#vIncludeBudget");
       const budgetWrap = add.querySelector("[data-budget-wrap]");
@@ -1404,8 +1410,10 @@
       const budgetValidation = add.querySelector("#vBudgetValidation");
       const updateAddBalance = () => {
         const quoted = toNumber(quotedInput.value);
+        const deposit = toNumber(depositInput.value);
         const paid = toNumber(paidInput.value);
-        balanceHelp.textContent = `Balance: $${money(quoted - paid)}`;
+        const remaining = vendorRemainingBalance(quoted, deposit, paid);
+        balanceHelp.textContent = `Balance: $${money(remaining)}`;
       };
       const setAddBudgetVisibility = (show) => {
         budgetWrap.classList.toggle("hidden", !show);
@@ -1417,6 +1425,7 @@
       };
       quotedInput.addEventListener("input", updateAddBalance);
       paidInput.addEventListener("input", updateAddBalance);
+      depositInput.addEventListener("input", updateAddBalance);
       includeToggle.addEventListener("change", ()=> setAddBudgetVisibility(includeToggle.checked));
       budgetSelect.addEventListener("change", ()=>{ if(budgetSelect.value) budgetValidation.classList.add("hidden"); });
       updateAddBalance();
@@ -1579,18 +1588,20 @@
           }
         };
 
-        const setVendorSummary = (quoted, amountPaid, dueDate) => {
+        const setVendorSummary = (quoted, deposit, amountPaid, dueDate) => {
+          const paidTotal = (Number(deposit) || 0) + (Number(amountPaid) || 0);
+          const remaining = vendorRemainingBalance(quoted, deposit, amountPaid);
           const parts = [
             `Quoted $${money(quoted)}`,
-            `Paid $${money(amountPaid)}`,
-            `Balance $${money(quoted - amountPaid)}`
+            `Paid $${money(paidTotal)}`,
+            `Balance $${money(remaining)}`
           ];
           if(dueDate){
             parts.push(`Due ${dueDate}`);
           }
           summaryLine.textContent = parts.join(" • ");
           if(balanceText){
-            balanceText.textContent = `Balance: $${money(quoted - amountPaid)}`;
+            balanceText.textContent = `Balance: $${money(remaining)}`;
           }
         };
 
@@ -1605,22 +1616,24 @@
         quotedField.addEventListener("input", (e)=>{
           const quoted = toNumber(e.target.value);
           updateVendor({ quoted });
-          setVendorSummary(quoted, toNumber(paidField.value), dueDateField.value);
+          setVendorSummary(quoted, toNumber(depositField.value), toNumber(paidField.value), dueDateField.value);
         });
 
         depositField.addEventListener("input", (e)=>{
-          updateVendor({ deposit: toNumber(e.target.value) });
+          const deposit = toNumber(e.target.value);
+          updateVendor({ deposit });
+          setVendorSummary(toNumber(quotedField.value), deposit, toNumber(paidField.value), dueDateField.value);
         });
 
         paidField.addEventListener("input", (e)=>{
           const amountPaid = toNumber(e.target.value);
           updateVendor({ amountPaid });
-          setVendorSummary(toNumber(quotedField.value), amountPaid, dueDateField.value);
+          setVendorSummary(toNumber(quotedField.value), toNumber(depositField.value), amountPaid, dueDateField.value);
         });
 
         dueDateField.addEventListener("input", (e)=>{
           updateVendor({ dueDate: e.target.value });
-          setVendorSummary(toNumber(quotedField.value), toNumber(paidField.value), e.target.value);
+          setVendorSummary(toNumber(quotedField.value), toNumber(depositField.value), toNumber(paidField.value), e.target.value);
         });
 
         contactField.addEventListener("input", (e)=>{
@@ -1667,7 +1680,7 @@
           toggleBtn.querySelector(".chev").textContent = isExpanded ? "▾" : "▸";
         });
 
-        setVendorSummary(v.quoted, v.amountPaid, v.dueDate);
+        setVendorSummary(v.quoted, v.deposit, v.amountPaid, v.dueDate);
         setBudgetVisibility(v.includeInBudget);
 
         list.appendChild(card);
