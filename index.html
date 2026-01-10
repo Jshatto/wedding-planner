@@ -94,7 +94,6 @@
 
     @media (max-width: 980px){
       .grid-cols-5{grid-template-columns:repeat(2,minmax(0,1fr))}
-      .grid-cols-4{grid-template-columns:repeat(2,minmax(0,1fr))}
     }
     @media (max-width: 720px){
       .grid-cols-5,.grid-cols-4,.grid-cols-3,.grid-cols-2{grid-template-columns:1fr}
@@ -575,7 +574,7 @@
       "Food & Catering",
       "Photography",
       "Videography",
-      "Beauty (Hair/Makeup/Nails/Tan)",
+      "Beauty",
       "Attire",
       "Flowers",
       "Decor",
@@ -640,8 +639,8 @@
       state.diy = safeJson(lsGet(KEYS.diy, "[]"), []) || [];
       state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
 
-      if(!state.budgetCats.includes("Beauty (Hair/Makeup/Nails/Tan)")){
-        state.budgetCats.push("Beauty (Hair/Makeup/Nails/Tan)");
+      if(!state.budgetCats.includes("Beauty")){
+        state.budgetCats.push("Beauty");
         save("budgetCats");
       }
 
@@ -726,17 +725,15 @@
 
     function buildVendorBudgetItem(vendor){
       const quoted = Number(vendor.quoted) || 0;
-      const deposit = Number(vendor.deposit) || 0;
       const paidAmount = Number(vendor.amountPaid) || 0;
-      const owed = Math.max(quoted - deposit - paidAmount, 0);
       return {
         source: "vendor",
         vendorId: vendor.id,
         category: vendor.budgetCategory || "",
         item: vendorBudgetItemLabel(vendor),
-        amount: owed,
-        paidAmount: 0,
-        paid: owed === 0 && quoted > 0
+        amount: quoted,
+        paidAmount,
+        paid: quoted > 0 && paidAmount >= quoted
       };
     }
 
@@ -755,6 +752,7 @@
         matches[0].category !== entry.category ||
         matches[0].item !== entry.item ||
         (Number(matches[0].amount) || 0) !== entry.amount ||
+        (Number(matches[0].paidAmount) || 0) !== entry.paidAmount ||
         !!matches[0].paid !== entry.paid;
 
       if(!needsUpdate) return false;
@@ -771,6 +769,15 @@
         if(syncVendorBudgetForVendor(vendor)) changed = true;
       });
       return changed;
+    }
+
+    function budgetItemSpent(item){
+      if(item.source === "vendor"){
+        const amount = Number(item.amount) || 0;
+        const paidAmount = Number(item.paidAmount) || 0;
+        return amount > 0 ? Math.min(paidAmount, amount) : paidAmount;
+      }
+      return Number(item.amount) || 0;
     }
 
     
@@ -1127,23 +1134,7 @@
       if(syncAllVendorBudgets()){
         save("budget");
       }
-      const plannedVendors = state.vendors
-        .filter(v => v.includeInBudget)
-        .reduce((sum, v)=>sum + (Number(v.quoted) || 0), 0);
-      const plannedManual = state.budget
-        .filter(item => item.source !== "vendor")
-        .reduce((sum, item)=>sum + (Number(item.amount) || 0), 0);
-      const plannedTotal = plannedVendors + plannedManual;
-
-      const spentVendors = state.vendors
-        .filter(v => v.includeInBudget)
-        .reduce((sum, v)=>sum + (Number(v.deposit) || 0) + (Number(v.amountPaid) || 0), 0);
-      const spentManual = state.budget
-        .filter(item => item.source !== "vendor" && item.paid)
-        .reduce((sum, item)=>sum + (Number(item.amount) || 0), 0);
-      const totalSpent = spentVendors + spentManual;
-
-      const unpaidPlanned = Math.max(plannedTotal - totalSpent, 0);
+      const totalSpent = state.budget.reduce((sum, item)=>sum + budgetItemSpent(item), 0);
       const remaining = state.totalBudget - totalSpent;
       const usedPct = state.totalBudget > 0 ? Math.round((totalSpent / state.totalBudget) * 100) : 0;
 
@@ -1161,31 +1152,26 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-4 gap-4 mt-4" style="margin-top:16px;">
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Planned</div>
-              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(plannedTotal)}</div>
-            </div>
+          <div class="grid grid-cols-3 gap-4 mt-4" style="margin-top:16px;">
             <div class="p-4 rounded-lg" style="background:var(--bg);">
               <div class="text-sm text-gray-600">Spent</div>
               <div class="text-2xl font-bold" style="color:var(--ink)">$${money(totalSpent)}</div>
             </div>
             <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Unpaid Planned</div>
-              <div class="text-2xl font-bold" style="color:var(--ink)">$${money(unpaidPlanned)}</div>
-            </div>
-            <div class="p-4 rounded-lg" style="background:var(--bg);">
-              <div class="text-sm text-gray-600">Remaining (vs Budget)</div>
+              <div class="text-sm text-gray-600">Remaining</div>
               <div class="text-2xl font-bold ${remaining < 0 ? "text-red-600":""}" style="${remaining>=0 ? "color:var(--sage);" : ""}">
                 $${money(remaining)}
               </div>
+            </div>
+            <div class="p-4 rounded-lg" style="background:var(--bg);">
+              <div class="text-sm text-gray-600">% Used</div>
+              <div class="text-2xl font-bold" style="color:var(--ink)">${usedPct}%</div>
             </div>
           </div>
 
           <div class="w-full progress-outer h-3 mt-4" style="margin-top:16px;">
             <div class="progress-inner" style="background:${remaining<0 ? "#DC2626" : "var(--rose)"}; width:${Math.min(usedPct,100)}%"></div>
           </div>
-          <div class="text-sm text-gray-600" style="margin-top:8px;">${usedPct}% of total budget used</div>
         </div>
       `));
 
@@ -1371,12 +1357,10 @@
       const budgetWrap = add.querySelector("[data-budget-wrap]");
       const budgetSelect = add.querySelector("#vBudgetCategory");
       const budgetValidation = add.querySelector("#vBudgetValidation");
-      const depositInput = add.querySelector("#vDeposit");
       const updateAddBalance = () => {
         const quoted = toNumber(quotedInput.value);
-        const deposit = toNumber(depositInput.value);
         const paid = toNumber(paidInput.value);
-        balanceHelp.textContent = `Balance: $${money(quoted - deposit - paid)}`;
+        balanceHelp.textContent = `Balance: $${money(quoted - paid)}`;
       };
       const setAddBudgetVisibility = (show) => {
         budgetWrap.classList.toggle("hidden", !show);
@@ -1387,7 +1371,6 @@
         }
       };
       quotedInput.addEventListener("input", updateAddBalance);
-      depositInput.addEventListener("input", updateAddBalance);
       paidInput.addEventListener("input", updateAddBalance);
       includeToggle.addEventListener("change", ()=> setAddBudgetVisibility(includeToggle.checked));
       budgetSelect.addEventListener("change", ()=>{ if(budgetSelect.value) budgetValidation.classList.add("hidden"); });
@@ -1399,7 +1382,7 @@
         const phone = add.querySelector("#vPhone").value.trim();
         const quotedValue = quotedInput.value;
         const quoted = toNumber(quotedValue);
-        const deposit = toNumber(depositInput.value);
+        const deposit = toNumber(add.querySelector("#vDeposit").value);
         const amountPaid = toNumber(paidInput.value);
         const dueDate = add.querySelector("#vDue").value;
         const budgetCategory = budgetSelect.value;
@@ -1555,11 +1538,10 @@
           }
         };
 
-        const setVendorSummary = (quoted, deposit, amountPaid) => {
-          const balance = quoted - deposit - amountPaid;
-          summaryLine.textContent = `Quoted $${money(quoted)} • Deposit $${money(deposit)} • Paid $${money(amountPaid)} • Balance $${money(balance)}`;
+        const setVendorSummary = (quoted, amountPaid) => {
+          summaryLine.textContent = `Quoted $${money(quoted)} • Paid $${money(amountPaid)} • Balance $${money(quoted - amountPaid)}`;
           if(balanceText){
-            balanceText.textContent = `Balance: $${money(balance)}`;
+            balanceText.textContent = `Balance: $${money(quoted - amountPaid)}`;
           }
         };
 
@@ -1584,19 +1566,17 @@
         quotedField.addEventListener("input", (e)=>{
           const quoted = toNumber(e.target.value);
           updateVendor({ quoted });
-          setVendorSummary(quoted, toNumber(depositField.value), toNumber(paidField.value));
+          setVendorSummary(quoted, toNumber(paidField.value));
         });
 
         depositField.addEventListener("input", (e)=>{
-          const deposit = toNumber(e.target.value);
-          updateVendor({ deposit });
-          setVendorSummary(toNumber(quotedField.value), deposit, toNumber(paidField.value));
+          updateVendor({ deposit: toNumber(e.target.value) });
         });
 
         paidField.addEventListener("input", (e)=>{
           const amountPaid = toNumber(e.target.value);
           updateVendor({ amountPaid });
-          setVendorSummary(toNumber(quotedField.value), toNumber(depositField.value), amountPaid);
+          setVendorSummary(toNumber(quotedField.value), amountPaid);
         });
 
         dueDateField.addEventListener("input", (e)=>{
@@ -1647,7 +1627,7 @@
           render();
         });
 
-        setVendorSummary(v.quoted, v.deposit, v.amountPaid);
+        setVendorSummary(v.quoted, v.amountPaid);
         setDueLine(v.dueDate);
         setBudgetVisibility(v.includeInBudget);
 
