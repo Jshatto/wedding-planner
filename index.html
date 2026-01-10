@@ -467,11 +467,30 @@
   font-size:12px;
   color:var(--muted);
 }
-.vendor-validation{
-  margin-top:6px;
-  font-size:12px;
-  color:#B91C1C;
-}
+    .vendor-validation{
+      margin-top:6px;
+      font-size:12px;
+      color:#B91C1C;
+    }
+
+    /* Vendors add form */
+    .vendorsAddCard{overflow:hidden}
+    .vendorsAddForm{
+      display:grid;
+      grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:10px;
+    }
+    .vendorsAddForm > *{min-width:0}
+    .vendorsAddForm input,
+    .vendorsAddForm select,
+    .vendorsAddForm textarea{width:100%}
+    .vendorsAddFull{grid-column:1/-1}
+    @media (max-width: 980px){
+      .vendorsAddForm{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media (max-width: 720px){
+      .vendorsAddForm{grid-template-columns:1fr}
+    }
 
 </style>
 </head>
@@ -1287,66 +1306,60 @@
       const wrap = document.createElement("div");
 
       const add = el(`
-        <div class="mb-6 p-4 card shadow-sm">
+        <div class="mb-6 p-4 card shadow-sm vendorsAddCard">
           <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Vendor</h3>
-          <div class="grid grid-cols-2 gap-2">
-            <input id="vName" type="text" placeholder="Vendor name *" />
-            <input id="vService" type="text" placeholder="Service *" />
-          </div>
-          <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
-            <label>
+          <div class="vendorsAddForm">
+            <input id="vName" class="col-span-2" type="text" placeholder="Vendor name *" />
+            <input id="vService" class="col-span-2" type="text" placeholder="Service *" />
+            <label class="col-span-2">
               <div class="text-xs text-gray-500">Quoted price *</div>
               <div class="input-group">
                 <span>$</span>
                 <input id="vQuoted" type="number" min="0" step="0.01" placeholder="0.00" />
               </div>
             </label>
-            <label>
+            <label class="col-span-2">
               <div class="text-xs text-gray-500">Amount paid</div>
               <div class="input-group">
                 <span>$</span>
                 <input id="vPaid" type="number" min="0" step="0.01" value="0" />
               </div>
             </label>
-          </div>
-          <div class="vendor-balance text-xs text-gray-500" id="vBalanceHelp">Balance: $0.00</div>
-          <div class="grid grid-cols-2 gap-2" style="margin-top:10px;align-items:center;">
-            <label class="inline-flex items-center gap-2">
+            <div class="vendor-balance text-xs text-gray-500 vendorsAddFull" id="vBalanceHelp">Balance: $0.00</div>
+            <label class="inline-flex items-center gap-2 col-span-2">
               <input id="vIncludeBudget" type="checkbox" style="width:auto" />
               <span class="text-sm">Include in Budget</span>
             </label>
-            <div data-budget-wrap class="hidden">
+            <div data-budget-wrap class="hidden vendorsAddFull">
               <div class="text-xs text-gray-500">Budget category</div>
               <select id="vBudgetCategory" disabled>
                 <option value="">Select category...</option>
                 ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
               </select>
             </div>
-          </div>
-          <div class="vendor-validation hidden" id="vBudgetValidation">Select a budget category to include this vendor.</div>
-          <details style="margin-top:12px;">
-            <summary class="text-sm text-gray-600" style="cursor:pointer;">More details</summary>
-            <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
-              <input id="vContact" type="text" placeholder="Contact" />
-              <input id="vPhone" type="text" placeholder="Phone" />
+            <div class="vendor-validation hidden vendorsAddFull" id="vBudgetValidation">Select a budget category to include this vendor.</div>
+            <details class="vendorsAddFull" style="margin-top:2px;">
+              <summary class="text-sm text-gray-600" style="cursor:pointer;">More details</summary>
+              <div class="vendorsAddForm" style="margin-top:10px;">
+                <input id="vContact" class="col-span-2" type="text" placeholder="Contact" />
+                <input id="vPhone" class="col-span-2" type="text" placeholder="Phone" />
+                <label class="col-span-2">
+                  <div class="text-xs text-gray-500">Deposit</div>
+                  <div class="input-group">
+                    <span>$</span>
+                    <input id="vDeposit" type="number" min="0" step="0.01" placeholder="0.00" />
+                  </div>
+                </label>
+                <label class="col-span-2">
+                  <div class="text-xs text-gray-500">Due date</div>
+                  <input id="vDue" type="date" placeholder="Due date" />
+                </label>
+                <textarea id="vNotes" class="vendorsAddFull" rows="2" placeholder="Notes (payment schedule, contract details, etc.)"></textarea>
+              </div>
+            </details>
+            <div class="vendorsAddFull">
+              <button id="vAdd" class="btn-primary" type="button">Add</button>
             </div>
-            <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
-              <label>
-                <div class="text-xs text-gray-500">Deposit</div>
-                <div class="input-group">
-                  <span>$</span>
-                  <input id="vDeposit" type="number" min="0" step="0.01" placeholder="0.00" />
-                </div>
-              </label>
-              <label>
-                <div class="text-xs text-gray-500">Due date</div>
-                <input id="vDue" type="date" placeholder="Due date" />
-              </label>
-            </div>
-            <textarea id="vNotes" rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;"></textarea>
-          </details>
-          <div class="mt-4" style="margin-top:12px;">
-            <button id="vAdd" class="btn-primary" type="button">Add</button>
           </div>
         </div>
       `);
@@ -1422,9 +1435,7 @@
 
       const list = el(`<div class="space-y-3"></div>`);
       state.vendors.forEach(v=>{
-        const expandKey = `vendor-${v.id}`;
-        const defaultExpanded = !window.matchMedia("(max-width: 720px)").matches;
-        const isExpanded = state.expanded[expandKey] ?? defaultExpanded;
+        let isExpanded = false;
         const card = el(`
           <div class="p-4 card shadow-sm">
             <div class="vendor-header">
@@ -1435,13 +1446,12 @@
               <div class="vendor-actions">
                 <button class="icon-btn" type="button" title="Delete">🗑️</button>
                 <button class="vendor-toggle" type="button">
-                  <span>${isExpanded ? "Hide" : "Details"}</span>
-                  <span class="chev" aria-hidden="true">${isExpanded ? "▾" : "▸"}</span>
+                  <span>Details</span>
+                  <span class="chev" aria-hidden="true">▸</span>
                 </button>
               </div>
             </div>
             <div class="vendor-summary" data-summary></div>
-            <div class="text-xs text-gray-500 ${v.dueDate ? "" : "hidden"}" data-due></div>
             <div class="${isExpanded ? "" : "hidden"}" data-expand>
               <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;">
                 <label>
@@ -1501,7 +1511,6 @@
         `);
 
         const summaryLine = card.querySelector("[data-summary]");
-        const dueLine = card.querySelector("[data-due]");
         const expandWrap = card.querySelector("[data-expand]");
         const toggleBtn = card.querySelector(".vendor-toggle");
         const [contactField, phoneField] = card.querySelectorAll('.grid.grid-cols-2 input[type="text"]');
@@ -1538,20 +1547,18 @@
           }
         };
 
-        const setVendorSummary = (quoted, amountPaid) => {
-          summaryLine.textContent = `Quoted $${money(quoted)} • Paid $${money(amountPaid)} • Balance $${money(quoted - amountPaid)}`;
+        const setVendorSummary = (quoted, amountPaid, dueDate) => {
+          const parts = [
+            `Quoted $${money(quoted)}`,
+            `Paid $${money(amountPaid)}`,
+            `Balance $${money(quoted - amountPaid)}`
+          ];
+          if(dueDate){
+            parts.push(`Due ${dueDate}`);
+          }
+          summaryLine.textContent = parts.join(" • ");
           if(balanceText){
             balanceText.textContent = `Balance: $${money(quoted - amountPaid)}`;
-          }
-        };
-
-        const setDueLine = (dateValue) => {
-          if(dateValue){
-            dueLine.textContent = `Due ${dateValue}`;
-            dueLine.classList.remove("hidden");
-          } else {
-            dueLine.textContent = "";
-            dueLine.classList.add("hidden");
           }
         };
 
@@ -1566,7 +1573,7 @@
         quotedField.addEventListener("input", (e)=>{
           const quoted = toNumber(e.target.value);
           updateVendor({ quoted });
-          setVendorSummary(quoted, toNumber(paidField.value));
+          setVendorSummary(quoted, toNumber(paidField.value), dueDateField.value);
         });
 
         depositField.addEventListener("input", (e)=>{
@@ -1576,12 +1583,12 @@
         paidField.addEventListener("input", (e)=>{
           const amountPaid = toNumber(e.target.value);
           updateVendor({ amountPaid });
-          setVendorSummary(toNumber(quotedField.value), amountPaid);
+          setVendorSummary(toNumber(quotedField.value), amountPaid, dueDateField.value);
         });
 
         dueDateField.addEventListener("input", (e)=>{
           updateVendor({ dueDate: e.target.value });
-          setDueLine(e.target.value);
+          setVendorSummary(toNumber(quotedField.value), toNumber(paidField.value), e.target.value);
         });
 
         contactField.addEventListener("input", (e)=>{
@@ -1622,13 +1629,13 @@
 
         toggleBtn.addEventListener("click", (e)=>{
           e.preventDefault();
-          state.expanded[expandKey] = !isExpanded;
-          save("expanded");
-          render();
+          isExpanded = !isExpanded;
+          expandWrap.classList.toggle("hidden", !isExpanded);
+          toggleBtn.querySelector("span").textContent = isExpanded ? "Hide" : "Details";
+          toggleBtn.querySelector(".chev").textContent = isExpanded ? "▾" : "▸";
         });
 
-        setVendorSummary(v.quoted, v.amountPaid);
-        setDueLine(v.dueDate);
+        setVendorSummary(v.quoted, v.amountPaid, v.dueDate);
         setBudgetVisibility(v.includeInBudget);
 
         list.appendChild(card);
