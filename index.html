@@ -164,6 +164,14 @@
       border-color: var(--taupe);
     }
 
+    .budget-total-input{
+      font-size:24px;
+      font-weight:800;
+      text-align:right;
+      padding:6px 12px;
+      width:160px;
+    }
+
     /* progress */
     .progress-outer{background:#E5E7EB;border-radius:999px;overflow:hidden}
     .progress-inner{height:100%;background:var(--rose);border-radius:999px;transition:width .35s ease}
@@ -1195,7 +1203,7 @@
             </div>
             <div class="text-right">
               <input id="totalBudgetInput" type="number" value="${state.totalBudget || ""}" placeholder="Total budget"
-                     style="font-size:24px;font-weight:800;text-align:right;border-bottom:2px solid var(--taupe);border-radius:0;padding:6px 2px;width:160px;" />
+                     class="budget-total-input" />
               <div class="text-sm text-gray-600" style="margin-top:6px;">Total Budget</div>
             </div>
           </div>
