@@ -125,6 +125,32 @@
     .btn-primary:hover{opacity:.92}
     .btn-icon{width:44px;display:inline-grid;place-items:center}
     .hover-bg:hover{background:#F9FAFB}
+    .hidden{display:none}
+
+    .input-group{
+      display:flex;
+      align-items:center;
+      border:1px solid #D1D5DB;
+      border-radius:12px;
+      background:white;
+      overflow:hidden;
+    }
+    .input-group span{
+      padding:0 10px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .input-group input{
+      border:0;
+      padding:10px 12px;
+      width:100%;
+      min-width:0;
+      background:transparent;
+    }
+    .input-group:focus-within{
+      box-shadow: 0 0 0 3px rgba(214,180,188,.35);
+      border-color: var(--taupe);
+    }
 
     /* progress */
     .progress-outer{background:#E5E7EB;border-radius:999px;overflow:hidden}
@@ -407,6 +433,46 @@
   .add-task-row input#newTaskText{ min-width:260px; }
 }
 
+/* Vendor cards */
+.vendor-header{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.vendor-actions{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.vendor-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 10px;
+  border-radius:999px;
+  background:#F3F4F6;
+  color:#6B7280;
+  font-size:12px;
+  font-weight:700;
+}
+.vendor-toggle:hover{background:#E5E7EB}
+.vendor-summary{
+  margin-top:8px;
+  font-size:13px;
+  color:var(--muted);
+}
+.vendor-balance{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--muted);
+}
+.vendor-validation{
+  margin-top:6px;
+  font-size:12px;
+  color:#B91C1C;
+}
+
 </style>
 </head>
 
@@ -508,6 +574,7 @@
       "Food & Catering",
       "Photography",
       "Videography",
+      "Beauty",
       "Attire",
       "Flowers",
       "Decor",
@@ -571,6 +638,11 @@
       state.totalBudget = parseFloat(lsGet(KEYS.totalBudget, "0")) || 0;
       state.diy = safeJson(lsGet(KEYS.diy, "[]"), []) || [];
       state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
+
+      if(!state.budgetCats.includes("Beauty")){
+        state.budgetCats.push("Beauty");
+        save("budgetCats");
+      }
 
       // Normalize tasks for delegation fields (older saves)
       state.tasks = state.tasks.map(t => ({
@@ -1217,32 +1289,62 @@
       const add = el(`
         <div class="mb-6 p-4 card shadow-sm">
           <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Vendor</h3>
-          <div class="grid grid-cols-4 gap-2">
-            <input id="vName" type="text" placeholder="Vendor name" />
-            <input id="vService" type="text" placeholder="Service" />
-            <input id="vContact" type="text" placeholder="Contact" />
-            <input id="vPhone" type="text" placeholder="Phone" />
-          </div>
-          <div class="grid grid-cols-5 gap-2" style="margin-top:10px;">
-            <input id="vQuoted" type="number" min="0" step="0.01" placeholder="Quoted price" />
-            <input id="vDeposit" type="number" min="0" step="0.01" placeholder="Deposit" />
-            <input id="vPaid" type="number" min="0" step="0.01" placeholder="Amount paid" />
-            <input id="vBalance" type="text" placeholder="Balance" value="$0.00" readonly />
-            <input id="vDue" type="date" placeholder="Due date" />
+          <div class="grid grid-cols-2 gap-2">
+            <input id="vName" type="text" placeholder="Vendor name *" />
+            <input id="vService" type="text" placeholder="Service *" />
           </div>
           <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
             <label>
-              <div class="text-xs text-gray-500">Budget category</div>
-              <select id="vBudgetCategory">
-                <option value="">Select category...</option>
-                ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
-              </select>
+              <div class="text-xs text-gray-500">Quoted price *</div>
+              <div class="input-group">
+                <span>$</span>
+                <input id="vQuoted" type="number" min="0" step="0.01" placeholder="0.00" />
+              </div>
             </label>
-            <label class="inline-flex items-center gap-2" style="margin-top:22px;">
+            <label>
+              <div class="text-xs text-gray-500">Amount paid</div>
+              <div class="input-group">
+                <span>$</span>
+                <input id="vPaid" type="number" min="0" step="0.01" value="0" />
+              </div>
+            </label>
+          </div>
+          <div class="vendor-balance text-xs text-gray-500" id="vBalanceHelp">Balance: $0.00</div>
+          <div class="grid grid-cols-2 gap-2" style="margin-top:10px;align-items:center;">
+            <label class="inline-flex items-center gap-2">
               <input id="vIncludeBudget" type="checkbox" style="width:auto" />
               <span class="text-sm">Include in Budget</span>
             </label>
+            <div data-budget-wrap class="hidden">
+              <div class="text-xs text-gray-500">Budget category</div>
+              <select id="vBudgetCategory" disabled>
+                <option value="">Select category...</option>
+                ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join("")}
+              </select>
+            </div>
           </div>
+          <div class="vendor-validation hidden" id="vBudgetValidation">Select a budget category to include this vendor.</div>
+          <details style="margin-top:12px;">
+            <summary class="text-sm text-gray-600" style="cursor:pointer;">More details</summary>
+            <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
+              <input id="vContact" type="text" placeholder="Contact" />
+              <input id="vPhone" type="text" placeholder="Phone" />
+            </div>
+            <div class="grid grid-cols-2 gap-2" style="margin-top:10px;">
+              <label>
+                <div class="text-xs text-gray-500">Deposit</div>
+                <div class="input-group">
+                  <span>$</span>
+                  <input id="vDeposit" type="number" min="0" step="0.01" placeholder="0.00" />
+                </div>
+              </label>
+              <label>
+                <div class="text-xs text-gray-500">Due date</div>
+                <input id="vDue" type="date" placeholder="Due date" />
+              </label>
+            </div>
+            <textarea id="vNotes" rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;"></textarea>
+          </details>
           <div class="mt-4" style="margin-top:12px;">
             <button id="vAdd" class="btn-primary" type="button">Add</button>
           </div>
@@ -1250,26 +1352,46 @@
       `);
       const quotedInput = add.querySelector("#vQuoted");
       const paidInput = add.querySelector("#vPaid");
-      const balanceInput = add.querySelector("#vBalance");
+      const balanceHelp = add.querySelector("#vBalanceHelp");
+      const includeToggle = add.querySelector("#vIncludeBudget");
+      const budgetWrap = add.querySelector("[data-budget-wrap]");
+      const budgetSelect = add.querySelector("#vBudgetCategory");
+      const budgetValidation = add.querySelector("#vBudgetValidation");
       const updateAddBalance = () => {
         const quoted = toNumber(quotedInput.value);
         const paid = toNumber(paidInput.value);
-        balanceInput.value = `$${money(quoted - paid)}`;
+        balanceHelp.textContent = `Balance: $${money(quoted - paid)}`;
+      };
+      const setAddBudgetVisibility = (show) => {
+        budgetWrap.classList.toggle("hidden", !show);
+        budgetSelect.disabled = !show;
+        if(!show){ budgetValidation.classList.add("hidden"); }
+        if(show && !budgetSelect.value){
+          budgetValidation.classList.remove("hidden");
+        }
       };
       quotedInput.addEventListener("input", updateAddBalance);
       paidInput.addEventListener("input", updateAddBalance);
+      includeToggle.addEventListener("change", ()=> setAddBudgetVisibility(includeToggle.checked));
+      budgetSelect.addEventListener("change", ()=>{ if(budgetSelect.value) budgetValidation.classList.add("hidden"); });
+      updateAddBalance();
       add.querySelector("#vAdd").addEventListener("click", ()=>{
         const name = add.querySelector("#vName").value.trim();
         const service = add.querySelector("#vService").value.trim();
         const contact = add.querySelector("#vContact").value.trim();
         const phone = add.querySelector("#vPhone").value.trim();
-        const quoted = toNumber(add.querySelector("#vQuoted").value);
+        const quotedValue = quotedInput.value;
+        const quoted = toNumber(quotedValue);
         const deposit = toNumber(add.querySelector("#vDeposit").value);
-        const amountPaid = toNumber(add.querySelector("#vPaid").value);
+        const amountPaid = toNumber(paidInput.value);
         const dueDate = add.querySelector("#vDue").value;
-        const budgetCategory = add.querySelector("#vBudgetCategory").value;
-        const includeInBudget = add.querySelector("#vIncludeBudget").checked;
-        if(!name || !service) return;
+        const budgetCategory = budgetSelect.value;
+        const includeInBudget = includeToggle.checked;
+        if(!name || !service || quotedValue === "") return;
+        if(includeInBudget && !budgetCategory){
+          budgetValidation.classList.remove("hidden");
+          return;
+        }
         const vendor = {
           id: Date.now(),
           name,
@@ -1282,7 +1404,7 @@
           dueDate,
           budgetCategory,
           includeInBudget,
-          notes:""
+          notes:add.querySelector("#vNotes").value.trim()
         };
         state.vendors.push(vendor);
         save("vendors");
@@ -1300,62 +1422,98 @@
 
       const list = el(`<div class="space-y-3"></div>`);
       state.vendors.forEach(v=>{
-        const balance = v.quoted - v.amountPaid;
+        const expandKey = `vendor-${v.id}`;
+        const defaultExpanded = !window.matchMedia("(max-width: 720px)").matches;
+        const isExpanded = state.expanded[expandKey] ?? defaultExpanded;
         const card = el(`
           <div class="p-4 card shadow-sm">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+            <div class="vendor-header">
               <div>
                 <div class="text-lg font-semibold" style="color:var(--ink)">${escapeHtml(v.name)}</div>
                 <div class="text-sm text-gray-600">${escapeHtml(v.service)}</div>
               </div>
-              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+              <div class="vendor-actions">
+                <button class="icon-btn" type="button" title="Delete">🗑️</button>
+                <button class="vendor-toggle" type="button">
+                  <span>${isExpanded ? "Hide" : "Details"}</span>
+                  <span class="chev" aria-hidden="true">${isExpanded ? "▾" : "▸"}</span>
+                </button>
+              </div>
             </div>
-            <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:10px;">
-              <div><span class="font-semibold">Contact:</span> ${escapeHtml(v.contact||"")}</div>
-              <div><span class="font-semibold">Phone:</span> ${escapeHtml(v.phone||"")}</div>
+            <div class="vendor-summary" data-summary></div>
+            <div class="text-xs text-gray-500 ${v.dueDate ? "" : "hidden"}" data-due></div>
+            <div class="${isExpanded ? "" : "hidden"}" data-expand>
+              <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;">
+                <label>
+                  <div class="text-xs text-gray-500">Contact</div>
+                  <input type="text" value="${escapeHtml(v.contact||"")}" />
+                </label>
+                <label>
+                  <div class="text-xs text-gray-500">Phone</div>
+                  <input type="text" value="${escapeHtml(v.phone||"")}" />
+                </label>
+              </div>
+              <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;">
+                <label>
+                  <div class="text-xs text-gray-500">Quoted price</div>
+                  <div class="input-group">
+                    <span>$</span>
+                    <input type="number" min="0" step="0.01" value="${escapeHtml(v.quoted)}" />
+                  </div>
+                </label>
+                <label>
+                  <div class="text-xs text-gray-500">Deposit</div>
+                  <div class="input-group">
+                    <span>$</span>
+                    <input type="number" min="0" step="0.01" value="${escapeHtml(v.deposit)}" />
+                  </div>
+                </label>
+                <label>
+                  <div class="text-xs text-gray-500">Amount paid</div>
+                  <div class="input-group">
+                    <span>$</span>
+                    <input type="number" min="0" step="0.01" value="${escapeHtml(v.amountPaid)}" />
+                  </div>
+                </label>
+                <label>
+                  <div class="text-xs text-gray-500">Due date</div>
+                  <input type="date" value="${escapeHtml(v.dueDate||"")}" />
+                </label>
+              </div>
+              <div class="vendor-balance" data-balance></div>
+              <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;align-items:center;">
+                <label class="inline-flex items-center gap-2">
+                  <input type="checkbox" ${v.includeInBudget ? "checked" : ""} style="width:auto" />
+                  <span class="text-sm">Include in Budget</span>
+                </label>
+                <div data-budget-wrap class="${v.includeInBudget ? "" : "hidden"}">
+                  <div class="text-xs text-gray-500">Budget category</div>
+                  <select data-budget-category ${v.includeInBudget ? "" : "disabled"}>
+                    <option value="">Select category...</option>
+                    ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}" ${v.budgetCategory === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
+                  </select>
+                </div>
+              </div>
+              <div class="vendor-validation ${v.includeInBudget && !v.budgetCategory ? "" : "hidden"}" data-budget-validation>Select a budget category to include this vendor.</div>
+              <textarea rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;">${escapeHtml(v.notes||"")}</textarea>
             </div>
-            <div class="grid grid-cols-5 gap-2 text-sm" style="margin-top:12px;">
-              <label>
-                <div class="text-xs text-gray-500">Quoted price</div>
-                <input type="number" min="0" step="0.01" value="${escapeHtml(v.quoted)}" />
-              </label>
-              <label>
-                <div class="text-xs text-gray-500">Deposit</div>
-                <input type="number" min="0" step="0.01" value="${escapeHtml(v.deposit)}" />
-              </label>
-              <label>
-                <div class="text-xs text-gray-500">Amount paid</div>
-                <input type="number" min="0" step="0.01" value="${escapeHtml(v.amountPaid)}" />
-              </label>
-              <label>
-                <div class="text-xs text-gray-500">Balance</div>
-                <input type="text" value="$${money(balance)}" readonly />
-              </label>
-              <label>
-                <div class="text-xs text-gray-500">Due date</div>
-                <input type="date" value="${escapeHtml(v.dueDate||"")}" />
-              </label>
-            </div>
-            <div class="grid grid-cols-2 gap-2 text-sm" style="margin-top:12px;">
-              <label>
-                <div class="text-xs text-gray-500">Budget category</div>
-                <select>
-                  <option value="">Select category...</option>
-                  ${state.budgetCats.map(c=>`<option value="${escapeHtml(c)}" ${v.budgetCategory === c ? "selected" : ""}>${escapeHtml(c)}</option>`).join("")}
-                </select>
-              </label>
-              <label class="inline-flex items-center gap-2" style="margin-top:22px;">
-                <input type="checkbox" ${v.includeInBudget ? "checked" : ""} style="width:auto" />
-                <span class="text-sm">Include in Budget</span>
-              </label>
-            </div>
-            <textarea rows="2" placeholder="Notes (payment schedule, contract details, etc.)" style="margin-top:10px;">${escapeHtml(v.notes||"")}</textarea>
           </div>
         `);
 
-        const [quotedField, depositField, paidField, balanceField, dueDateField] = card.querySelectorAll('.grid.grid-cols-5 input');
-        const budgetSelect = card.querySelector('select');
+        const summaryLine = card.querySelector("[data-summary]");
+        const dueLine = card.querySelector("[data-due]");
+        const expandWrap = card.querySelector("[data-expand]");
+        const toggleBtn = card.querySelector(".vendor-toggle");
+        const [contactField, phoneField] = card.querySelectorAll('.grid.grid-cols-2 input[type="text"]');
+        const currencyInputs = card.querySelectorAll('.input-group input');
+        const [quotedField, depositField, paidField] = currencyInputs;
+        const dueDateField = card.querySelector('input[type="date"]');
+        const balanceText = card.querySelector("[data-balance]");
+        const budgetWrap = card.querySelector("[data-budget-wrap]");
+        const budgetSelect = card.querySelector("[data-budget-category]");
         const includeBudgetToggle = card.querySelector('input[type="checkbox"]');
+        const budgetValidation = card.querySelector("[data-budget-validation]");
+        let currentBudgetCategory = v.budgetCategory || "";
 
         card.querySelector("button").addEventListener("click", ()=>{
           state.vendors = state.vendors.filter(x => x.id!==v.id);
@@ -1380,14 +1538,35 @@
           }
         };
 
-        const updateBalance = (quoted, amountPaid) => {
-          balanceField.value = `$${money(quoted - amountPaid)}`;
+        const setVendorSummary = (quoted, amountPaid) => {
+          summaryLine.textContent = `Quoted $${money(quoted)} • Paid $${money(amountPaid)} • Balance $${money(quoted - amountPaid)}`;
+          if(balanceText){
+            balanceText.textContent = `Balance: $${money(quoted - amountPaid)}`;
+          }
+        };
+
+        const setDueLine = (dateValue) => {
+          if(dateValue){
+            dueLine.textContent = `Due ${dateValue}`;
+            dueLine.classList.remove("hidden");
+          } else {
+            dueLine.textContent = "";
+            dueLine.classList.add("hidden");
+          }
+        };
+
+        const setBudgetVisibility = (show) => {
+          budgetWrap.classList.toggle("hidden", !show);
+          budgetSelect.disabled = !show;
+          if(!show){
+            budgetValidation.classList.add("hidden");
+          }
         };
 
         quotedField.addEventListener("input", (e)=>{
           const quoted = toNumber(e.target.value);
           updateVendor({ quoted });
-          updateBalance(quoted, toNumber(paidField.value));
+          setVendorSummary(quoted, toNumber(paidField.value));
         });
 
         depositField.addEventListener("input", (e)=>{
@@ -1397,25 +1576,60 @@
         paidField.addEventListener("input", (e)=>{
           const amountPaid = toNumber(e.target.value);
           updateVendor({ amountPaid });
-          updateBalance(toNumber(quotedField.value), amountPaid);
+          setVendorSummary(toNumber(quotedField.value), amountPaid);
         });
 
         dueDateField.addEventListener("input", (e)=>{
           updateVendor({ dueDate: e.target.value });
+          setDueLine(e.target.value);
+        });
+
+        contactField.addEventListener("input", (e)=>{
+          updateVendor({ contact: e.target.value });
+        });
+
+        phoneField.addEventListener("input", (e)=>{
+          updateVendor({ phone: e.target.value });
         });
 
         budgetSelect.addEventListener("change", (e)=>{
-          updateVendor({ budgetCategory: e.target.value });
+          const next = e.target.value;
+          if(includeBudgetToggle.checked && !next){
+            budgetValidation.classList.remove("hidden");
+            budgetSelect.value = currentBudgetCategory;
+            return;
+          }
+          currentBudgetCategory = next;
+          updateVendor({ budgetCategory: next });
+          budgetValidation.classList.add("hidden");
         });
 
         includeBudgetToggle.addEventListener("change", (e)=>{
-          updateVendor({ includeInBudget: e.target.checked });
-          render();
+          const include = e.target.checked;
+          if(include && !budgetSelect.value){
+            budgetValidation.classList.remove("hidden");
+            includeBudgetToggle.checked = false;
+            setBudgetVisibility(false);
+            return;
+          }
+          updateVendor({ includeInBudget: include });
+          setBudgetVisibility(include);
         });
 
         card.querySelector("textarea").addEventListener("input", (e)=>{
           updateVendor({ notes:e.target.value });
         });
+
+        toggleBtn.addEventListener("click", (e)=>{
+          e.preventDefault();
+          state.expanded[expandKey] = !isExpanded;
+          save("expanded");
+          render();
+        });
+
+        setVendorSummary(v.quoted, v.amountPaid);
+        setDueLine(v.dueDate);
+        setBudgetVisibility(v.includeInBudget);
 
         list.appendChild(card);
       });
