@@ -742,6 +742,15 @@ h1.font-script{
         delegationId: t.delegationId ?? null
       }));
 
+      const diyStatusOptions = new Set(["pending", "in-progress", "complete"]);
+      state.diy = state.diy.map(d => ({
+        ...d,
+        done: !!d.done,
+        delegated: !!d.delegated,
+        delegatedTo: d.delegatedTo ?? "",
+        delegationStatus: diyStatusOptions.has(d.delegationStatus) ? d.delegationStatus : "pending"
+      }));
+
       // Normalize budget items for older saves
       state.budget = state.budget.map(b => ({
         ...b,
@@ -990,6 +999,13 @@ h1.font-script{
       save("tasks");
     }
 
+    function removeDelegationForDiy(diy){
+      diy.delegated = false;
+      diy.delegatedTo = "";
+      diy.delegationStatus = "pending";
+      save("diy");
+    }
+
     /**********************
      * Tabs               *
      **********************/
@@ -1138,6 +1154,8 @@ h1.font-script{
         const body = card.querySelector('[data-body="1"]');
 
         catTasks.forEach(task=>{
+          const delegationEntry = task.delegationId ? state.delegation.find(d => d.id === task.delegationId) : null;
+          const needsName = task.delegated && (!delegationEntry || !delegationEntry.person.trim());
           const row = el(`
             <div class="task-row hover-bg">
               <button class="icon-btn" type="button" title="Toggle complete">
@@ -1151,7 +1169,7 @@ h1.font-script{
                 <label class="delegateWrap">
                   <input type="checkbox" ${task.delegated ? "checked":""} />
                   <span>Delegate</span>
-                  ${task.delegated ? `<span class="flag">(needs a name)</span>` : ""}
+                  ${needsName ? `<span class="flag">(needs a name)</span>` : ""}
                 </label>
               </div>
 
@@ -1916,7 +1934,14 @@ h1.font-script{
       add.querySelector("#dAdd").addEventListener("click", ()=>{
         const title = add.querySelector("#dTitle").value.trim();
         if(!title) return;
-        state.diy.push({ id: Date.now(), title, done:false });
+        state.diy.push({
+          id: Date.now(),
+          title,
+          done:false,
+          delegated:false,
+          delegatedTo:"",
+          delegationStatus:"pending"
+        });
         save("diy");
         add.querySelector("#dTitle").value = "";
         render();
@@ -1933,6 +1958,7 @@ h1.font-script{
 
       const list = el(`<div class="space-y-3"></div>`);
       state.diy.forEach(d=>{
+        const needsName = d.delegated && !String(d.delegatedTo || "").trim();
         const card = el(`
           <div class="p-4 card shadow-sm">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -1941,6 +1967,11 @@ h1.font-script{
               </button>
               <div style="flex:1;">
                 <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+                <label class="delegateWrap" style="margin-top:6px;">
+                  <input type="checkbox" ${d.delegated ? "checked":""} />
+                  <span>Delegate</span>
+                  ${needsName ? `<span class="flag">(needs a name)</span>` : ""}
+                </label>
               </div>
               <button class="icon-btn" type="button" title="Delete">🗑️</button>
             </div>
@@ -1950,6 +1981,24 @@ h1.font-script{
         card.querySelectorAll("button")[0].addEventListener("click", ()=>{
           state.diy = state.diy.map(x => x.id===d.id ? ({...x, done:!x.done}) : x);
           save("diy");
+          render();
+        });
+
+        const delCb = card.querySelector('input[type="checkbox"]');
+        delCb.addEventListener("click", async (e)=>{
+          e.preventDefault();
+          const dRef = state.diy.find(x => x.id===d.id);
+          if(!dRef) return;
+          if(!dRef.delegated){
+            dRef.delegated = true;
+            dRef.delegationStatus = dRef.delegationStatus || "pending";
+            save("diy");
+            render();
+            return;
+          }
+          const ok = await confirmDialog("If you uncheck “Delegate,” this DIY item will be removed from the Delegation tab.");
+          if(!ok){ render(); return; }
+          removeDelegationForDiy(dRef);
           render();
         });
 
@@ -2082,90 +2131,165 @@ h1.font-script{
 
     function renderDelegationTab(){
       const wrap = document.createElement("div");
+      const taskNeedsName = state.delegation.filter(d=>!d.person.trim()).length;
+      const diyNeedsName = state.diy.filter(d=>d.delegated && !String(d.delegatedTo || "").trim()).length;
+      const needsNameTotal = taskNeedsName + diyNeedsName;
 
       wrap.appendChild(el(`
         <div class="mb-6 p-6 card shadow-sm">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
             <div>
               <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0;">Delegation</h2>
-              <p class="text-sm text-gray-600" style="margin:6px 0 0;">Items appear here when you check “Delegate” on a task.</p>
+              <p class="text-sm text-gray-600" style="margin:6px 0 0;">Items appear here when you check “Delegate” on a task or DIY item.</p>
             </div>
             <div class="p-4 rounded-lg" style="background:var(--bg);border:1px solid rgba(199,189,180,.5);">
               <div class="text-xs text-gray-600">Needs a name</div>
               <div class="text-2xl font-bold" style="color:#B45309;margin-top:4px;">
-                ${state.delegation.filter(d=>!d.person.trim()).length}
+                ${needsNameTotal}
               </div>
             </div>
           </div>
         </div>
       `));
 
+      const tasksSection = el(`
+        <div class="mb-6">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Delegated Tasks</h3>
+          <div class="space-y-3" data-section="tasks"></div>
+        </div>
+      `);
+      const taskList = tasksSection.querySelector('[data-section="tasks"]');
       if(!state.delegation.length){
-        wrap.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No delegated items yet. Use the Delegate checkbox on the Tasks tab.</div>`));
-        return wrap;
+        taskList.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No delegated tasks yet. Use the Delegate checkbox on the Tasks tab.</div>`));
+      } else {
+        state.delegation.forEach(d=>{
+          const needsName = !d.person.trim();
+
+          const card = el(`
+            <div class="p-4 card shadow-sm">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                  <div class="text-sm text-gray-600">${escapeHtml(d.category||"")}</div>
+                  <div class="text-lg font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(d.task)}</div>
+                </div>
+                <button class="icon-btn" type="button" title="Remove delegation">🗑️</button>
+              </div>
+
+              <div class="mt-4 grid grid-cols-3 gap-2" style="margin-top:12px;">
+                <input type="text" placeholder="Assign to (name)..." value="${escapeHtml(d.person)}" />
+                <select>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="complete">Complete</option>
+                </select>
+                <div class="text-sm" style="display:flex;align-items:center;justify-content:flex-end;">
+                  ${needsName ? `<span class="flag">Needs a name</span>` : `<span style="color:var(--sage);font-weight:800;">Assigned</span>`}
+                </div>
+              </div>
+            </div>
+          `);
+
+          const removeBtn = card.querySelector("button");
+          const nameInput = card.querySelector('input[type="text"]');
+          const statusSel = card.querySelector("select");
+
+          statusSel.value = d.status || "pending";
+
+          nameInput.addEventListener("input", (e)=>{
+            state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, person:e.target.value}) : x);
+            save("delegation");
+            render();
+          });
+
+          statusSel.addEventListener("change", (e)=>{
+            state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, status:e.target.value}) : x);
+            save("delegation");
+          });
+
+          removeBtn.addEventListener("click", async ()=>{
+            const task = state.tasks.find(t => t.id===d.taskId);
+            const ok = await confirmDialog("Remove this delegation and uncheck “Delegate” on the task?");
+            if(!ok) return;
+            if(task) removeDelegationForTask(task);
+            else {
+              state.delegation = state.delegation.filter(x => x.id!==d.id);
+              save("delegation");
+            }
+            render();
+          });
+
+          taskList.appendChild(card);
+        });
+      }
+      wrap.appendChild(tasksSection);
+
+      const diySection = el(`
+        <div>
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Delegated DIY</h3>
+          <div class="space-y-3" data-section="diy"></div>
+        </div>
+      `);
+      const diyList = diySection.querySelector('[data-section="diy"]');
+      const delegatedDiy = state.diy.filter(d=>d.delegated);
+      if(!delegatedDiy.length){
+        diyList.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">No delegated DIY items yet. Use the Delegate checkbox on the DIY tab.</div>`));
+      } else {
+        delegatedDiy.forEach(d=>{
+          const needsName = !String(d.delegatedTo || "").trim();
+          const card = el(`
+            <div class="p-4 card shadow-sm">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                  <div class="text-sm text-gray-600">DIY</div>
+                  <div class="text-lg font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(d.title)}</div>
+                </div>
+                <button class="icon-btn" type="button" title="Remove delegation">🗑️</button>
+              </div>
+
+              <div class="mt-4 grid grid-cols-3 gap-2" style="margin-top:12px;">
+                <input type="text" placeholder="Assign to (name)..." value="${escapeHtml(d.delegatedTo || "")}" />
+                <select>
+                  <option value="pending">Pending</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="complete">Complete</option>
+                </select>
+                <div class="text-sm" style="display:flex;align-items:center;justify-content:flex-end;">
+                  ${needsName ? `<span class="flag">Needs a name</span>` : `<span style="color:var(--sage);font-weight:800;">Assigned</span>`}
+                </div>
+              </div>
+            </div>
+          `);
+
+          const removeBtn = card.querySelector("button");
+          const nameInput = card.querySelector('input[type="text"]');
+          const statusSel = card.querySelector("select");
+
+          statusSel.value = d.delegationStatus || "pending";
+
+          nameInput.addEventListener("input", (e)=>{
+            state.diy = state.diy.map(x => x.id===d.id ? ({...x, delegatedTo:e.target.value}) : x);
+            save("diy");
+            render();
+          });
+
+          statusSel.addEventListener("change", (e)=>{
+            state.diy = state.diy.map(x => x.id===d.id ? ({...x, delegationStatus:e.target.value}) : x);
+            save("diy");
+          });
+
+          removeBtn.addEventListener("click", async ()=>{
+            const ok = await confirmDialog("Remove this delegation and uncheck “Delegate” on the DIY item?");
+            if(!ok) return;
+            const dRef = state.diy.find(x => x.id===d.id);
+            if(dRef) removeDelegationForDiy(dRef);
+            render();
+          });
+
+          diyList.appendChild(card);
+        });
       }
 
-      const list = el(`<div class="space-y-3"></div>`);
-      state.delegation.forEach(d=>{
-        const needsName = !d.person.trim();
-
-        const card = el(`
-          <div class="p-4 card shadow-sm">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-              <div style="flex:1;">
-                <div class="text-sm text-gray-600">${escapeHtml(d.category||"")}</div>
-                <div class="text-lg font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(d.task)}</div>
-              </div>
-              <button class="icon-btn" type="button" title="Remove delegation">🗑️</button>
-            </div>
-
-            <div class="mt-4 grid grid-cols-3 gap-2" style="margin-top:12px;">
-              <input type="text" placeholder="Assign to (name)..." value="${escapeHtml(d.person)}" />
-              <select>
-                <option value="pending">Pending</option>
-                <option value="in-progress">In Progress</option>
-                <option value="complete">Complete</option>
-              </select>
-              <div class="text-sm" style="display:flex;align-items:center;justify-content:flex-end;">
-                ${needsName ? `<span class="flag">Needs a name</span>` : `<span style="color:var(--sage);font-weight:800;">Assigned</span>`}
-              </div>
-            </div>
-          </div>
-        `);
-
-        const removeBtn = card.querySelector("button");
-        const nameInput = card.querySelector('input[type="text"]');
-        const statusSel = card.querySelector("select");
-
-        statusSel.value = d.status || "pending";
-
-        nameInput.addEventListener("input", (e)=>{
-          state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, person:e.target.value}) : x);
-          save("delegation");
-          render();
-        });
-
-        statusSel.addEventListener("change", (e)=>{
-          state.delegation = state.delegation.map(x => x.id===d.id ? ({...x, status:e.target.value}) : x);
-          save("delegation");
-        });
-
-        removeBtn.addEventListener("click", async ()=>{
-          const task = state.tasks.find(t => t.id===d.taskId);
-          const ok = await confirmDialog("Remove this delegation and uncheck “Delegate” on the task?");
-          if(!ok) return;
-          if(task) removeDelegationForTask(task);
-          else {
-            state.delegation = state.delegation.filter(x => x.id!==d.id);
-            save("delegation");
-          }
-          render();
-        });
-
-        list.appendChild(card);
-      });
-
-      wrap.appendChild(list);
+      wrap.appendChild(diySection);
       return wrap;
     }
 
