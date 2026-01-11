@@ -704,7 +704,13 @@ h1.font-script{
       inspiration: "wp_inspiration",
       totalBudget: "wp_totalBudget",
       diy: "wp_diy",
-      budgetCats: "wp_budgetCats"
+      budgetCats: "wp_budgetCats",
+      itinerary: "wp_itinerary",
+      packing: "wp_packing",
+      packingDismissed: "wp_packingDismissed",
+      packingAISuggestions: "wp_packingAISuggestions",
+      packingAIDismissed: "wp_packingAIDismissed",
+      aiEndpoint: "wp_aiEndpoint"
     };
 
     const state = {
@@ -719,7 +725,14 @@ h1.font-script{
       inspiration: [],
       totalBudget: 0,
       diy: [],
-      budgetCats: []
+      budgetCats: [],
+      itinerary: [],
+      packing: [],
+      packingDismissed: [],
+      packingAISuggestions: [],
+      packingAIDismissed: [],
+      packingSuggestionMode: "basic",
+      packingStatus: { message: "", tone: "" }
     };
 
     function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
@@ -739,6 +752,11 @@ h1.font-script{
       state.totalBudget = parseFloat(lsGet(KEYS.totalBudget, "0")) || 0;
       state.diy = safeJson(lsGet(KEYS.diy, "[]"), []) || [];
       state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
+      state.itinerary = safeJson(lsGet(KEYS.itinerary, "[]"), []) || [];
+      state.packing = safeJson(lsGet(KEYS.packing, "[]"), []) || [];
+      state.packingDismissed = safeJson(lsGet(KEYS.packingDismissed, "[]"), []) || [];
+      state.packingAISuggestions = safeJson(lsGet(KEYS.packingAISuggestions, "[]"), []) || [];
+      state.packingAIDismissed = safeJson(lsGet(KEYS.packingAIDismissed, "[]"), []) || [];
 
       if(!state.budgetCats.includes("Beauty (Hair/Makeup/Nails/Tan)")){
         state.budgetCats.push("Beauty (Hair/Makeup/Nails/Tan)");
@@ -805,6 +823,11 @@ h1.font-script{
         case "totalBudget": lsSet(KEYS.totalBudget, String(state.totalBudget)); break;
         case "diy": lsSet(KEYS.diy, JSON.stringify(state.diy)); break;
         case "budgetCats": lsSet(KEYS.budgetCats, JSON.stringify(state.budgetCats)); break;
+        case "itinerary": lsSet(KEYS.itinerary, JSON.stringify(state.itinerary)); break;
+        case "packing": lsSet(KEYS.packing, JSON.stringify(state.packing)); break;
+        case "packingDismissed": lsSet(KEYS.packingDismissed, JSON.stringify(state.packingDismissed)); break;
+        case "packingAISuggestions": lsSet(KEYS.packingAISuggestions, JSON.stringify(state.packingAISuggestions)); break;
+        case "packingAIDismissed": lsSet(KEYS.packingAIDismissed, JSON.stringify(state.packingAIDismissed)); break;
       }
     }
 
@@ -829,6 +852,9 @@ h1.font-script{
       const num = parseFloat(val);
       return Number.isFinite(num) ? num : 0;
     }
+    function normalizeItemName(name){
+      return String(name || "").trim().toLowerCase();
+    }
 
     function vendorBudgetItemLabel(vendor){
       const service = vendor.service ? ` - ${vendor.service}` : "";
@@ -837,6 +863,114 @@ h1.font-script{
 
     function vendorRemainingBalance(quoted, deposit, amountPaid){
       return Math.max((Number(quoted) || 0) - (Number(deposit) || 0) - (Number(amountPaid) || 0), 0);
+    }
+
+    const AI_ENDPOINT = "";
+    const BASIC_PACKING_SUGGESTIONS = [
+      { id: "basic-1", category: "Clothing", item: "Light rain jacket" },
+      { id: "basic-2", category: "Clothing", item: "Comfortable walking shoes" },
+      { id: "basic-3", category: "Clothing", item: "Layering sweater" },
+      { id: "basic-4", category: "Toiletries", item: "Sunscreen" },
+      { id: "basic-5", category: "Toiletries", item: "Travel-size toiletries" },
+      { id: "basic-6", category: "Tech", item: "Phone charger" },
+      { id: "basic-7", category: "Tech", item: "Portable power bank" },
+      { id: "basic-8", category: "Documents", item: "Photo ID" },
+      { id: "basic-9", category: "Documents", item: "Wedding itinerary printout" },
+      { id: "basic-10", category: "Misc", item: "Reusable water bottle" },
+      { id: "basic-11", category: "Misc", item: "Snacks for the drive" },
+      { id: "basic-12", category: "Misc", item: "Umbrella" }
+    ];
+
+    function getPackingItinerary(){
+      const itinerary = Array.isArray(state.itinerary) ? state.itinerary : [];
+      if(itinerary.length){
+        return itinerary.map(entry => ({
+          date: entry.date || "",
+          time: entry.time || "",
+          event: entry.event || entry.title || ""
+        }));
+      }
+      return (state.timeline || []).map(entry => ({
+        date: entry.date || "",
+        time: entry.time || "",
+        event: entry.event || entry.title || ""
+      }));
+    }
+
+    function getPackingDateRange(){
+      return "May 4–8, 2026";
+    }
+
+    function getPackingExistingItems(){
+      return (state.packing || []).map(item => item.item || "");
+    }
+
+    function getFilteredPackingSuggestions(suggestions, dismissed){
+      const dismissedSet = new Set((dismissed || []).map(String));
+      const existing = new Set(getPackingExistingItems().map(normalizeItemName));
+      return (suggestions || []).filter(s => {
+        const itemName = normalizeItemName(s.item);
+        return itemName && !existing.has(itemName) && !dismissedSet.has(String(s.id));
+      });
+    }
+
+    function addPackingItem(itemLabel){
+      const normalized = normalizeItemName(itemLabel);
+      if(!normalized) return;
+      const exists = state.packing.some(p => normalizeItemName(p.item) === normalized);
+      if(exists) return;
+      state.packing.push({ id: Date.now(), item: itemLabel, packed: false });
+      save("packing");
+    }
+
+    function updatePackingStatus(message, tone){
+      state.packingStatus = { message: message || "", tone: tone || "" };
+    }
+
+    function setPackingStatus(root, message, tone){
+      const status = root.querySelector("#packingSuggestStatus");
+      if(!status) return;
+      status.textContent = message || "";
+      status.classList.remove("text-gray-600", "text-red-600", "text-gray-500");
+      if(!message){
+        status.classList.add("text-gray-500");
+        return;
+      }
+      status.classList.add(tone === "error" ? "text-red-600" : "text-gray-600");
+    }
+
+    async function fetchPackingAISuggestions(){
+      const storedEndpoint = lsGet(KEYS.aiEndpoint, "") || "";
+      const endpoint = (storedEndpoint || AI_ENDPOINT || "").trim();
+      if(!endpoint){
+        return { error: "AI suggestions unavailable — using Basic suggestions", fallback: true };
+      }
+
+      const payload = {
+        destination: "Gatlinburg, Tennessee",
+        dateRange: getPackingDateRange(),
+        itinerary: getPackingItinerary(),
+        existingPackingItems: getPackingExistingItems()
+      };
+
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+      try{
+        const res = await fetch(`${endpoint.replace(/\/$/,"")}/api/packing-suggestions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal
+        });
+        if(!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const data = await res.json();
+        if(!data || !Array.isArray(data.suggestions)) throw new Error("Invalid response");
+        return { data };
+      }catch(error){
+        return { error: "AI suggestions unavailable — using Basic suggestions", fallback: true };
+      }finally{
+        clearTimeout(timeoutId);
+      }
     }
 
     function buildVendorBudgetItem(vendor){
@@ -988,6 +1122,7 @@ h1.font-script{
       { id:'vendors', name:'Vendors', icon:'📞' },
       { id:'guests', name:'Guest List', icon:'👥' },
       { id:'timeline', name:'Timeline', icon:'⏰' },
+      { id:'packing', name:'Packing', icon:'🧳' },
       { id:'shopping', name:'Shopping', icon:'🛒' },
       { id:'delegation', name:'Delegation', icon:'👤' },
       { id:'diy', name:'DIY List', icon:'🛠️' },     // ADDED (not replacing)
@@ -1876,6 +2011,201 @@ h1.font-script{
       return wrap;
     }
 
+    function renderPackingTab(){
+      const wrap = document.createElement("div");
+
+      const add = el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <h3 class="font-semibold" style="color:var(--ink);margin:0 0 12px;">Add Packing Item</h3>
+          <div class="grid grid-cols-4 gap-2">
+            <input id="pItem" type="text" placeholder="Item" class="col-span-3" />
+            <button id="pAdd" class="btn-primary" type="button">Add</button>
+          </div>
+        </div>
+      `);
+      add.querySelector("#pAdd").addEventListener("click", ()=>{
+        const item = add.querySelector("#pItem").value.trim();
+        if(!item) return;
+        addPackingItem(item);
+        add.querySelector("#pItem").value = "";
+        render();
+      });
+      add.querySelector("#pItem").addEventListener("keydown", (e)=>{
+        if(e.key === "Enter") add.querySelector("#pAdd").click();
+      });
+      wrap.appendChild(add);
+
+      const packingList = el(`<div class="mb-6 p-4 card shadow-sm"></div>`);
+      if(!state.packing.length){
+        packingList.appendChild(el(`<div class="text-sm text-gray-600">No packing items yet.</div>`));
+      } else {
+        const list = el(`<div class="space-y-3"></div>`);
+        state.packing.forEach(p=>{
+          const row = el(`
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button class="icon-btn" type="button" title="Toggle packed">
+                <span class="checkboxDot ${p.packed ? "done":""}">${p.packed ? "✓":""}</span>
+              </button>
+              <div class="${p.packed ? "line-through text-gray-400":"text-gray-700"} font-semibold" style="flex:1;">
+                ${escapeHtml(p.item)}
+              </div>
+              <button class="icon-btn" type="button" title="Delete">🗑️</button>
+            </div>
+          `);
+          const toggleBtn = row.querySelectorAll("button")[0];
+          const deleteBtn = row.querySelectorAll("button")[1];
+          toggleBtn.addEventListener("click", ()=>{
+            state.packing = state.packing.map(x => x.id===p.id ? ({...x, packed:!x.packed}) : x);
+            save("packing");
+            render();
+          });
+          deleteBtn.addEventListener("click", ()=>{
+            state.packing = state.packing.filter(x => x.id!==p.id);
+            save("packing");
+            render();
+          });
+          list.appendChild(row);
+        });
+        packingList.appendChild(list);
+      }
+      wrap.appendChild(packingList);
+
+      const suggestionsCard = el(`
+        <div id="packingSuggestionsCard" class="mb-6 p-4 card shadow-sm">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+            <div>
+              <h3 class="font-semibold" style="color:var(--ink);margin:0 0 6px;">Suggested from itinerary</h3>
+              <div class="text-xs text-gray-600">Use the itinerary to populate a smart packing list.</div>
+            </div>
+            <div class="text-xs text-gray-600">
+              <span id="packingSuggestCount">0</span> suggestions
+            </div>
+          </div>
+          <div class="mt-4" style="display:flex;flex-wrap:wrap;gap:8px;">
+            <button id="packingSuggestAIBtn" class="btn-primary" type="button">AI suggestions</button>
+            <button id="packingSuggestBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--ink);font-weight:600;">Basic suggestions</button>
+            <button id="packingResetBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--muted);font-weight:600;">Reset suggestions</button>
+          </div>
+          <div id="packingSuggestStatus" class="text-xs text-gray-500" style="margin-top:8px;"></div>
+          <div id="packingSuggestionsList" class="space-y-3" style="margin-top:16px;"></div>
+        </div>
+      `);
+
+      const aiBtn = suggestionsCard.querySelector("#packingSuggestAIBtn");
+      const basicBtn = suggestionsCard.querySelector("#packingSuggestBtn");
+      const resetBtn = suggestionsCard.querySelector("#packingResetBtn");
+      const countLabel = suggestionsCard.querySelector("#packingSuggestCount");
+      const listEl = suggestionsCard.querySelector("#packingSuggestionsList");
+
+      function renderSuggestions(){
+        listEl.innerHTML = "";
+        const mode = state.packingSuggestionMode || "basic";
+        const suggestions = mode === "ai"
+          ? getFilteredPackingSuggestions(state.packingAISuggestions, state.packingAIDismissed)
+          : getFilteredPackingSuggestions(BASIC_PACKING_SUGGESTIONS, state.packingDismissed);
+        countLabel.textContent = String(suggestions.length);
+
+        if(!suggestions.length){
+          listEl.appendChild(el(`<div class="text-sm text-gray-600">No suggestions right now.</div>`));
+          return;
+        }
+
+        suggestions.forEach(s=>{
+          const card = el(`
+            <div class="p-3 card shadow-sm" style="background:#FCFBFA;">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                <div style="flex:1;">
+                  <div class="text-xs text-gray-600">${escapeHtml(s.category || "General")}</div>
+                  <div class="font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(s.item)}</div>
+                  ${s.reason ? `<div class="text-xs text-gray-500" style="margin-top:6px;">${escapeHtml(s.reason)}</div>` : ""}
+                </div>
+                <div style="display:flex;gap:6px;">
+                  <button class="btn-primary" type="button" style="padding:6px 10px;">Add</button>
+                  <button class="icon-btn hover-bg" type="button" title="Dismiss">✕</button>
+                </div>
+              </div>
+            </div>
+          `);
+          const addBtn = card.querySelectorAll("button")[0];
+          const dismissBtn = card.querySelectorAll("button")[1];
+
+          addBtn.addEventListener("click", ()=>{
+            addPackingItem(s.item);
+            if(mode === "ai"){
+              state.packingAIDismissed = [...new Set([...state.packingAIDismissed, String(s.id)])];
+              save("packingAIDismissed");
+            } else {
+              state.packingDismissed = [...new Set([...state.packingDismissed, String(s.id)])];
+              save("packingDismissed");
+            }
+            render();
+          });
+
+          dismissBtn.addEventListener("click", ()=>{
+            if(mode === "ai"){
+              state.packingAIDismissed = [...new Set([...state.packingAIDismissed, String(s.id)])];
+              save("packingAIDismissed");
+            } else {
+              state.packingDismissed = [...new Set([...state.packingDismissed, String(s.id)])];
+              save("packingDismissed");
+            }
+            render();
+          });
+
+          listEl.appendChild(card);
+        });
+      }
+
+      basicBtn.addEventListener("click", ()=>{
+        state.packingSuggestionMode = "basic";
+        updatePackingStatus("Basic suggestions updated", "success");
+        render();
+      });
+
+      aiBtn.addEventListener("click", async ()=>{
+        aiBtn.disabled = true;
+        basicBtn.disabled = true;
+        resetBtn.disabled = true;
+        updatePackingStatus("Generating suggestions…", "loading");
+        setPackingStatus(suggestionsCard, state.packingStatus.message, state.packingStatus.tone);
+
+        const result = await fetchPackingAISuggestions();
+        aiBtn.disabled = false;
+        basicBtn.disabled = false;
+        resetBtn.disabled = false;
+
+        if(result.data){
+          state.packingAISuggestions = result.data.suggestions || [];
+          save("packingAISuggestions");
+          state.packingSuggestionMode = "ai";
+          updatePackingStatus("AI suggestions updated", "success");
+          render();
+          return;
+        }
+
+        updatePackingStatus(result.error || "AI suggestions unavailable — using Basic suggestions", "error");
+        state.packingSuggestionMode = "basic";
+        render();
+      });
+
+      resetBtn.addEventListener("click", ()=>{
+        state.packingDismissed = [];
+        state.packingAIDismissed = [];
+        state.packingAISuggestions = [];
+        save("packingDismissed");
+        save("packingAIDismissed");
+        save("packingAISuggestions");
+        updatePackingStatus("Suggestions reset", "success");
+        render();
+      });
+
+      setPackingStatus(suggestionsCard, state.packingStatus.message, state.packingStatus.tone);
+      renderSuggestions();
+      wrap.appendChild(suggestionsCard);
+
+      return wrap;
+    }
+
     function renderDIYTab(){
       const wrap = document.createElement("div");
 
@@ -2439,6 +2769,7 @@ h1.font-script{
       else if(state.activeTab === "vendors") root.appendChild(renderVendorsTab());
       else if(state.activeTab === "guests") root.appendChild(renderGuestsTab());
       else if(state.activeTab === "timeline") root.appendChild(renderTimelineTab());
+      else if(state.activeTab === "packing") root.appendChild(renderPackingTab());
       else if(state.activeTab === "shopping") root.appendChild(renderShoppingTab());
       else if(state.activeTab === "delegation") root.appendChild(renderDelegationTab());
       else if(state.activeTab === "diy") root.appendChild(renderDIYTab());
