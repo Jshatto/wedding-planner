@@ -216,6 +216,28 @@ h1.font-script{
     .cat-title{font-weight:600;font-size:18px}
     .min-w-12{min-width:48px}
     .badge{padding:6px 12px;border-radius:999px;font-size:14px}
+    .status-badge{
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      white-space:nowrap;
+    }
+    .status-ready{
+      background:#DCFCE7;
+      color:#166534;
+      border:1px solid #86EFAC;
+    }
+    .status-blocked{
+      background:#FEF3C7;
+      color:#92400E;
+      border:1px solid #FCD34D;
+    }
+    .status-none{
+      background:#F3F4F6;
+      color:#6B7280;
+      border:1px solid #E5E7EB;
+    }
     .chev{font-size:18px;width:20px;display:inline-grid;place-items:center;color:#6B7280}
 
     /* task rows */
@@ -933,6 +955,17 @@ h1.font-script{
       return state.diy.length
         ? Math.round((state.diy.filter(d=>d.done).length / state.diy.length)*100)
         : 0;
+    }
+    function getDiyMaterialsStatus(diyItem){
+      const linked = state.shopping.filter(s => s.diyId === diyItem.id);
+      if(!linked.length){
+        return { label: "No materials linked", tone: "status-none", ready: false };
+      }
+      const allPurchased = linked.every(s => s.purchased);
+      if(allPurchased){
+        return { label: "Ready", tone: "status-ready", ready: true };
+      }
+      return { label: "Blocked (needs materials)", tone: "status-blocked", ready: false };
     }
 
     /**********************
@@ -1887,6 +1920,7 @@ h1.font-script{
 
       const pct = diyProgress();
       const done = state.diy.filter(d=>d.done).length;
+      const readyCount = state.diy.filter(d => getDiyMaterialsStatus(d).ready).length;
 
       wrap.appendChild(el(`
         <div class="mb-6 p-6 card shadow-sm">
@@ -1903,6 +1937,16 @@ h1.font-script{
           <p class="text-sm text-gray-600" style="margin:8px 0 0;">${done} of ${state.diy.length} DIY items completed</p>
         </div>
       `));
+
+      if(state.diy.length){
+        wrap.appendChild(el(`
+          <div class="mb-6 grid kpi-grid gap-4">
+            <div class="p-4 rounded-lg kpi-card">
+              <div class="text-sm text-gray-600">Ready projects: <span class="font-semibold">${readyCount}</span></div>
+            </div>
+          </div>
+        `));
+      }
 
       const add = el(`
         <div class="mb-6 p-4 card shadow-sm">
@@ -1933,6 +1977,7 @@ h1.font-script{
 
       const list = el(`<div class="space-y-3"></div>`);
       state.diy.forEach(d=>{
+        const status = getDiyMaterialsStatus(d);
         const card = el(`
           <div class="p-4 card shadow-sm">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -1940,7 +1985,10 @@ h1.font-script{
                 <span class="checkboxDot ${d.done ? "done":""}">${d.done ? "✓":""}</span>
               </button>
               <div style="flex:1;">
-                <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+                  <span class="status-badge ${status.tone}">${status.label}</span>
+                </div>
               </div>
               <button class="icon-btn" type="button" title="Delete">🗑️</button>
             </div>
