@@ -216,6 +216,20 @@ h1.font-script{
     .cat-title{font-weight:600;font-size:18px}
     .min-w-12{min-width:48px}
     .badge{padding:6px 12px;border-radius:999px;font-size:14px}
+    .status-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:4px 10px;
+      border-radius:999px;
+      font-size:12px;
+      font-weight:700;
+      border:1px solid transparent;
+      white-space:nowrap;
+    }
+    .status-ready{background:#DCFCE7;color:#166534;border-color:#86EFAC}
+    .status-blocked{background:#FEF3C7;color:#92400E;border-color:#FCD34D}
+    .status-muted{background:#F3F4F6;color:#6B7280;border-color:#E5E7EB}
     .chev{font-size:18px;width:20px;display:inline-grid;place-items:center;color:#6B7280}
 
     /* task rows */
@@ -1858,6 +1872,21 @@ h1.font-script{
 
       const pct = diyProgress();
       const done = state.diy.filter(d=>d.done).length;
+      const readinessById = new Map();
+      const readyCount = state.diy.reduce((count, diyItem)=>{
+        const linked = state.shopping.filter(s => s.diyId === diyItem.id);
+        if(!linked.length){
+          readinessById.set(diyItem.id, { label: "No materials linked", className: "status-muted" });
+          return count;
+        }
+        const allPurchased = linked.every(item => item.purchased);
+        if(allPurchased){
+          readinessById.set(diyItem.id, { label: "Ready", className: "status-ready" });
+          return count + 1;
+        }
+        readinessById.set(diyItem.id, { label: "Blocked (needs materials)", className: "status-blocked" });
+        return count;
+      }, 0);
 
       wrap.appendChild(el(`
         <div class="mb-6 p-6 card shadow-sm">
@@ -1872,6 +1901,13 @@ h1.font-script{
             <div class="progress-inner" style="width:${pct}%"></div>
           </div>
           <p class="text-sm text-gray-600" style="margin:8px 0 0;">${done} of ${state.diy.length} DIY items completed</p>
+        </div>
+      `));
+
+      wrap.appendChild(el(`
+        <div class="mb-6 p-4 card shadow-sm">
+          <div class="text-xs text-gray-600">Ready projects</div>
+          <div class="text-2xl font-bold" style="color:var(--sage);margin-top:4px;">${readyCount}</div>
         </div>
       `));
 
@@ -1907,6 +1943,7 @@ h1.font-script{
         const materials = state.shopping.filter(s => s.diyId === d.id);
         const totalMaterials = materials.length;
         const purchasedMaterials = materials.filter(s => s.purchased).length;
+        const readiness = readinessById.get(d.id) ?? { label: "No materials linked", className: "status-muted" };
         const card = el(`
           <div class="p-4 card shadow-sm">
             <div style="display:flex;gap:12px;align-items:flex-start;">
@@ -1914,7 +1951,10 @@ h1.font-script{
                 <span class="checkboxDot ${d.done ? "done":""}">${d.done ? "✓":""}</span>
               </button>
               <div style="flex:1;">
-                <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div class="${d.done ? "line-through text-gray-400":"text-gray-700"} font-semibold">${escapeHtml(d.title)}</div>
+                  <span class="status-badge ${readiness.className}">${readiness.label}</span>
+                </div>
                 <div class="text-xs text-gray-600" style="margin-top:6px;">
                   Materials: ${totalMaterials} total • ${purchasedMaterials} purchased
                 </div>
