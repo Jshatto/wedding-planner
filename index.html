@@ -318,6 +318,15 @@ h1.font-script{
     .btn-outline:hover{background:#F9FAFB}
     .btn-danger{background:#DC2626;color:white}
     .btn-danger:hover{opacity:.92}
+    .btn-link{
+      background:transparent;
+      border:0;
+      padding:0;
+      font-weight:600;
+      color:var(--muted);
+      text-decoration:underline;
+      font-size:12px;
+    }
   
     /* ==========================
        Mobile / iPad optimization
@@ -615,6 +624,29 @@ h1.font-script{
     </div>
   </div>
 
+  <!-- AI Settings Modal -->
+  <div class="modalOverlay" id="aiSettingsOverlay" role="dialog" aria-modal="true" aria-labelledby="aiSettingsTitle">
+    <div class="modal">
+      <div class="text-xl font-semibold" id="aiSettingsTitle" style="color:var(--ink)">AI Settings</div>
+      <div class="text-sm text-gray-700" style="margin-top:8px;">
+        Store the Render endpoint used for AI packing suggestions.
+      </div>
+      <div style="margin-top:14px;">
+        <label class="text-sm font-semibold" for="aiEndpointInput">Render API URL</label>
+        <input id="aiEndpointInput" type="text" inputmode="url" placeholder="https://planner-ai-proxy.onrender.com" style="margin-top:8px;" />
+        <div class="text-xs text-gray-500" style="margin-top:6px;">Example: https://planner-ai-proxy.onrender.com</div>
+        <div id="aiEndpointStatus" class="text-xs text-gray-500" style="margin-top:8px;"></div>
+      </div>
+      <div class="modalActions" style="flex-wrap:wrap;justify-content:space-between;">
+        <button class="btn-outline" id="aiSettingsTest" type="button">Test connection</button>
+        <div style="display:flex;gap:10px;">
+          <button class="btn-outline" id="aiSettingsCancel" type="button">Cancel</button>
+          <button class="btn-primary" id="aiSettingsSave" type="button">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script>
     /**********************
      * Data / Prefill     *
@@ -856,6 +888,18 @@ h1.font-script{
       return String(name || "").trim().toLowerCase();
     }
 
+    function normalizeEndpoint(value){
+      const trimmed = String(value || "").trim();
+      if(!trimmed) return "";
+      const noSlash = trimmed.replace(/\/$/,"");
+      if(!/^https?:\/\//i.test(noSlash)) return "";
+      return noSlash;
+    }
+
+    function getStoredAiEndpoint(){
+      return normalizeEndpoint(lsGet(KEYS.aiEndpoint, ""));
+    }
+
     function vendorBudgetItemLabel(vendor){
       const service = vendor.service ? ` - ${vendor.service}` : "";
       return `${vendor.name}${service}`;
@@ -865,7 +909,7 @@ h1.font-script{
       return Math.max((Number(quoted) || 0) - (Number(deposit) || 0) - (Number(amountPaid) || 0), 0);
     }
 
-    const AI_ENDPOINT = "";
+    const DEFAULT_AI_ENDPOINT = "https://planner-ai-proxy.onrender.com";
     const BASIC_PACKING_SUGGESTIONS = [
       { id: "basic-1", category: "Clothing", item: "Light rain jacket" },
       { id: "basic-2", category: "Clothing", item: "Comfortable walking shoes" },
@@ -940,10 +984,9 @@ h1.font-script{
     }
 
     async function fetchPackingAISuggestions(){
-      const storedEndpoint = lsGet(KEYS.aiEndpoint, "") || "";
-      const endpoint = (storedEndpoint || AI_ENDPOINT || "").trim();
+      const endpoint = getStoredAiEndpoint();
       if(!endpoint){
-        return { error: "AI suggestions unavailable — using Basic suggestions", fallback: true };
+        return { error: "Set your AI endpoint in AI Settings", fallback: true, missing: true };
       }
 
       const payload = {
@@ -956,7 +999,7 @@ h1.font-script{
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 12000);
       try{
-        const res = await fetch(`${endpoint.replace(/\/$/,"")}/api/packing-suggestions`, {
+        const res = await fetch(`${endpoint}/api/packing-suggestions`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -967,7 +1010,7 @@ h1.font-script{
         if(!data || !Array.isArray(data.suggestions)) throw new Error("Invalid response");
         return { data };
       }catch(error){
-        return { error: "AI suggestions unavailable — using Basic suggestions", fallback: true };
+        return { error: "AI unavailable — using Basic suggestions", fallback: true };
       }finally{
         clearTimeout(timeoutId);
       }
@@ -1112,6 +1155,80 @@ h1.font-script{
     confirmCancel.addEventListener("click", ()=>closeConfirm(false));
     confirmOk.addEventListener("click", ()=>closeConfirm(true));
     confirmOverlay.addEventListener("click", (e)=>{ if(e.target===confirmOverlay) closeConfirm(false); });
+
+    /**********************
+     * AI Settings modal  *
+     **********************/
+    const aiSettingsOverlay = document.getElementById("aiSettingsOverlay");
+    const aiEndpointInput = document.getElementById("aiEndpointInput");
+    const aiEndpointStatus = document.getElementById("aiEndpointStatus");
+    const aiSettingsCancel = document.getElementById("aiSettingsCancel");
+    const aiSettingsSave = document.getElementById("aiSettingsSave");
+    const aiSettingsTest = document.getElementById("aiSettingsTest");
+
+    function setAiEndpointStatus(message, tone){
+      if(!aiEndpointStatus) return;
+      aiEndpointStatus.textContent = message || "";
+      aiEndpointStatus.classList.remove("text-gray-600", "text-red-600", "text-gray-500");
+      if(!message){
+        aiEndpointStatus.classList.add("text-gray-500");
+        return;
+      }
+      aiEndpointStatus.classList.add(tone === "error" ? "text-red-600" : "text-gray-600");
+    }
+
+    function openAiSettingsModal(){
+      const stored = getStoredAiEndpoint();
+      if(aiEndpointInput){
+        aiEndpointInput.value = stored || DEFAULT_AI_ENDPOINT;
+        setAiEndpointStatus("", "");
+        aiEndpointInput.focus();
+      }
+      aiSettingsOverlay.classList.add("show");
+    }
+
+    function closeAiSettingsModal(){
+      aiSettingsOverlay.classList.remove("show");
+    }
+
+    aiSettingsCancel.addEventListener("click", closeAiSettingsModal);
+    aiSettingsOverlay.addEventListener("click", (e)=>{ if(e.target===aiSettingsOverlay) closeAiSettingsModal(); });
+
+    aiSettingsSave.addEventListener("click", ()=>{
+      const cleaned = normalizeEndpoint(aiEndpointInput.value);
+      if(!cleaned){
+        setAiEndpointStatus("Enter a valid http(s) URL", "error");
+        return;
+      }
+      lsSet(KEYS.aiEndpoint, cleaned);
+      closeAiSettingsModal();
+      updatePackingStatus("AI endpoint saved", "success");
+      render();
+    });
+
+    aiSettingsTest.addEventListener("click", async ()=>{
+      const cleaned = normalizeEndpoint(aiEndpointInput.value);
+      if(!cleaned){
+        setAiEndpointStatus("Enter a valid http(s) URL", "error");
+        return;
+      }
+      setAiEndpointStatus("Testing connection...", "info");
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      try{
+        const res = await fetch(`${cleaned}/`, { method: "GET", signal: controller.signal });
+        const text = await res.text();
+        if(res.ok && text.trim() === "OK"){
+          setAiEndpointStatus("Connected", "success");
+        } else {
+          setAiEndpointStatus("Could not reach endpoint", "error");
+        }
+      }catch(error){
+        setAiEndpointStatus("Could not reach endpoint", "error");
+      }finally{
+        clearTimeout(timeoutId);
+      }
+    });
 
     /**********************
      * Tabs               *
@@ -2081,10 +2198,11 @@ h1.font-script{
               <span id="packingSuggestCount">0</span> suggestions
             </div>
           </div>
-          <div class="mt-4" style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="mt-4" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
             <button id="packingSuggestAIBtn" class="btn-primary" type="button">AI suggestions</button>
             <button id="packingSuggestBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--ink);font-weight:600;">Basic suggestions</button>
             <button id="packingResetBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--muted);font-weight:600;">Reset suggestions</button>
+            <button id="packingAiSettingsBtn" class="btn-link" type="button">AI Settings</button>
           </div>
           <div id="packingSuggestStatus" class="text-xs text-gray-500" style="margin-top:8px;"></div>
           <div id="packingSuggestionsList" class="space-y-3" style="margin-top:16px;"></div>
@@ -2094,6 +2212,7 @@ h1.font-script{
       const aiBtn = suggestionsCard.querySelector("#packingSuggestAIBtn");
       const basicBtn = suggestionsCard.querySelector("#packingSuggestBtn");
       const resetBtn = suggestionsCard.querySelector("#packingResetBtn");
+      const aiSettingsBtn = suggestionsCard.querySelector("#packingAiSettingsBtn");
       const countLabel = suggestionsCard.querySelector("#packingSuggestCount");
       const listEl = suggestionsCard.querySelector("#packingSuggestionsList");
 
@@ -2111,12 +2230,15 @@ h1.font-script{
         }
 
         suggestions.forEach(s=>{
+          const qtyLabel = (s.qty !== undefined && s.qty !== null && String(s.qty).trim() !== "")
+            ? `<span class="text-xs text-gray-500" style="margin-left:6px;">Qty: ${escapeHtml(s.qty)}</span>`
+            : "";
           const card = el(`
             <div class="p-3 card shadow-sm" style="background:#FCFBFA;">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
                 <div style="flex:1;">
                   <div class="text-xs text-gray-600">${escapeHtml(s.category || "General")}</div>
-                  <div class="font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(s.item)}</div>
+                  <div class="font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(s.item)}${qtyLabel}</div>
                   ${s.reason ? `<div class="text-xs text-gray-500" style="margin-top:6px;">${escapeHtml(s.reason)}</div>` : ""}
                 </div>
                 <div style="display:flex;gap:6px;">
@@ -2162,17 +2284,23 @@ h1.font-script{
         render();
       });
 
+      aiSettingsBtn.addEventListener("click", ()=>{
+        openAiSettingsModal();
+      });
+
       aiBtn.addEventListener("click", async ()=>{
         aiBtn.disabled = true;
         basicBtn.disabled = true;
         resetBtn.disabled = true;
-        updatePackingStatus("Generating suggestions…", "loading");
+        aiSettingsBtn.disabled = true;
+        updatePackingStatus("Generating AI suggestions…", "loading");
         setPackingStatus(suggestionsCard, state.packingStatus.message, state.packingStatus.tone);
 
         const result = await fetchPackingAISuggestions();
         aiBtn.disabled = false;
         basicBtn.disabled = false;
         resetBtn.disabled = false;
+        aiSettingsBtn.disabled = false;
 
         if(result.data){
           state.packingAISuggestions = result.data.suggestions || [];
@@ -2183,7 +2311,7 @@ h1.font-script{
           return;
         }
 
-        updatePackingStatus(result.error || "AI suggestions unavailable — using Basic suggestions", "error");
+        updatePackingStatus(result.error || "AI unavailable — using Basic suggestions", "error");
         state.packingSuggestionMode = "basic";
         render();
       });
