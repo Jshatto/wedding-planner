@@ -624,29 +624,6 @@ h1.font-script{
     </div>
   </div>
 
-  <!-- AI Settings Modal -->
-  <div class="modalOverlay" id="aiSettingsOverlay" role="dialog" aria-modal="true" aria-labelledby="aiSettingsTitle">
-    <div class="modal">
-      <div class="text-xl font-semibold" id="aiSettingsTitle" style="color:var(--ink)">AI Settings</div>
-      <div class="text-sm text-gray-700" style="margin-top:8px;">
-        Store the Render endpoint used for AI packing suggestions.
-      </div>
-      <div style="margin-top:14px;">
-        <label class="text-sm font-semibold" for="aiEndpointInput">Render API URL</label>
-        <input id="aiEndpointInput" type="text" inputmode="url" placeholder="https://planner-ai-proxy.onrender.com" style="margin-top:8px;" />
-        <div class="text-xs text-gray-500" style="margin-top:6px;">Example: https://planner-ai-proxy.onrender.com</div>
-        <div id="aiEndpointStatus" class="text-xs text-gray-500" style="margin-top:8px;"></div>
-      </div>
-      <div class="modalActions" style="flex-wrap:wrap;justify-content:space-between;">
-        <button class="btn-outline" id="aiSettingsTest" type="button">Test connection</button>
-        <div style="display:flex;gap:10px;">
-          <button class="btn-outline" id="aiSettingsCancel" type="button">Cancel</button>
-          <button class="btn-primary" id="aiSettingsSave" type="button">Save</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
     /**********************
      * Data / Prefill     *
@@ -738,11 +715,7 @@ h1.font-script{
       diy: "wp_diy",
       budgetCats: "wp_budgetCats",
       itinerary: "wp_itinerary",
-      packing: "wp_packing",
-      packingDismissed: "wp_packingDismissed",
-      packingAISuggestions: "wp_packingAISuggestions",
-      packingAIDismissed: "wp_packingAIDismissed",
-      aiEndpoint: "wp_aiEndpoint"
+      packing: "wp_packing"
     };
 
     const state = {
@@ -759,12 +732,7 @@ h1.font-script{
       diy: [],
       budgetCats: [],
       itinerary: [],
-      packing: [],
-      packingDismissed: [],
-      packingAISuggestions: [],
-      packingAIDismissed: [],
-      packingSuggestionMode: "basic",
-      packingStatus: { message: "", tone: "" }
+      packing: []
     };
 
     function safeJson(str, fallback){ try{ return JSON.parse(str); }catch(e){ return fallback; } }
@@ -786,9 +754,6 @@ h1.font-script{
       state.budgetCats = safeJson(lsGet(KEYS.budgetCats, ""), null) || structuredClone(defaultBudgetCategories);
       state.itinerary = safeJson(lsGet(KEYS.itinerary, "[]"), []) || [];
       state.packing = safeJson(lsGet(KEYS.packing, "[]"), []) || [];
-      state.packingDismissed = safeJson(lsGet(KEYS.packingDismissed, "[]"), []) || [];
-      state.packingAISuggestions = safeJson(lsGet(KEYS.packingAISuggestions, "[]"), []) || [];
-      state.packingAIDismissed = safeJson(lsGet(KEYS.packingAIDismissed, "[]"), []) || [];
 
       if(!state.budgetCats.includes("Beauty (Hair/Makeup/Nails/Tan)")){
         state.budgetCats.push("Beauty (Hair/Makeup/Nails/Tan)");
@@ -857,9 +822,6 @@ h1.font-script{
         case "budgetCats": lsSet(KEYS.budgetCats, JSON.stringify(state.budgetCats)); break;
         case "itinerary": lsSet(KEYS.itinerary, JSON.stringify(state.itinerary)); break;
         case "packing": lsSet(KEYS.packing, JSON.stringify(state.packing)); break;
-        case "packingDismissed": lsSet(KEYS.packingDismissed, JSON.stringify(state.packingDismissed)); break;
-        case "packingAISuggestions": lsSet(KEYS.packingAISuggestions, JSON.stringify(state.packingAISuggestions)); break;
-        case "packingAIDismissed": lsSet(KEYS.packingAIDismissed, JSON.stringify(state.packingAIDismissed)); break;
       }
     }
 
@@ -888,18 +850,6 @@ h1.font-script{
       return String(name || "").trim().toLowerCase();
     }
 
-    function normalizeEndpoint(value){
-      const trimmed = String(value || "").trim();
-      if(!trimmed) return "";
-      const noSlash = trimmed.replace(/\/$/,"");
-      if(!/^https?:\/\//i.test(noSlash)) return "";
-      return noSlash;
-    }
-
-    function getStoredAiEndpoint(){
-      return normalizeEndpoint(lsGet(KEYS.aiEndpoint, ""));
-    }
-
     function vendorBudgetItemLabel(vendor){
       const service = vendor.service ? ` - ${vendor.service}` : "";
       return `${vendor.name}${service}`;
@@ -908,22 +858,6 @@ h1.font-script{
     function vendorRemainingBalance(quoted, deposit, amountPaid){
       return Math.max((Number(quoted) || 0) - (Number(deposit) || 0) - (Number(amountPaid) || 0), 0);
     }
-
-    const DEFAULT_AI_ENDPOINT = "https://planner-ai-proxy.onrender.com";
-    const BASIC_PACKING_SUGGESTIONS = [
-      { id: "basic-1", category: "Clothing", item: "Light rain jacket" },
-      { id: "basic-2", category: "Clothing", item: "Comfortable walking shoes" },
-      { id: "basic-3", category: "Clothing", item: "Layering sweater" },
-      { id: "basic-4", category: "Toiletries", item: "Sunscreen" },
-      { id: "basic-5", category: "Toiletries", item: "Travel-size toiletries" },
-      { id: "basic-6", category: "Tech", item: "Phone charger" },
-      { id: "basic-7", category: "Tech", item: "Portable power bank" },
-      { id: "basic-8", category: "Documents", item: "Photo ID" },
-      { id: "basic-9", category: "Documents", item: "Wedding itinerary printout" },
-      { id: "basic-10", category: "Misc", item: "Reusable water bottle" },
-      { id: "basic-11", category: "Misc", item: "Snacks for the drive" },
-      { id: "basic-12", category: "Misc", item: "Umbrella" }
-    ];
 
     function getPackingItinerary(){
       const itinerary = Array.isArray(state.itinerary) ? state.itinerary : [];
@@ -949,15 +883,6 @@ h1.font-script{
       return (state.packing || []).map(item => item.item || "");
     }
 
-    function getFilteredPackingSuggestions(suggestions, dismissed){
-      const dismissedSet = new Set((dismissed || []).map(String));
-      const existing = new Set(getPackingExistingItems().map(normalizeItemName));
-      return (suggestions || []).filter(s => {
-        const itemName = normalizeItemName(s.item);
-        return itemName && !existing.has(itemName) && !dismissedSet.has(String(s.id));
-      });
-    }
-
     function addPackingItem(itemLabel){
       const normalized = normalizeItemName(itemLabel);
       if(!normalized) return;
@@ -965,55 +890,6 @@ h1.font-script{
       if(exists) return;
       state.packing.push({ id: Date.now(), item: itemLabel, packed: false });
       save("packing");
-    }
-
-    function updatePackingStatus(message, tone){
-      state.packingStatus = { message: message || "", tone: tone || "" };
-    }
-
-    function setPackingStatus(root, message, tone){
-      const status = root.querySelector("#packingSuggestStatus");
-      if(!status) return;
-      status.textContent = message || "";
-      status.classList.remove("text-gray-600", "text-red-600", "text-gray-500");
-      if(!message){
-        status.classList.add("text-gray-500");
-        return;
-      }
-      status.classList.add(tone === "error" ? "text-red-600" : "text-gray-600");
-    }
-
-    async function fetchPackingAISuggestions(){
-      const endpoint = getStoredAiEndpoint();
-      if(!endpoint){
-        return { error: "Set your AI endpoint in AI Settings", fallback: true, missing: true };
-      }
-
-      const payload = {
-        destination: "Gatlinburg, Tennessee",
-        dateRange: getPackingDateRange(),
-        itinerary: getPackingItinerary(),
-        existingPackingItems: getPackingExistingItems()
-      };
-
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 25000);
-      try{
-        const res = await fetch(`${endpoint}/api/packing-suggestions`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal
-        });
-        if(!res.ok) throw new Error(`Request failed: ${res.status}`);
-        const data = await res.json();
-        if(!data || !Array.isArray(data.suggestions)) throw new Error("Invalid response");
-        return { data };
-      }catch(error){
-        return { error: "AI unavailable — using Basic suggestions", fallback: true };
-      }finally{
-        clearTimeout(timeoutId);
-      }
     }
 
     function buildVendorBudgetItem(vendor){
@@ -1155,80 +1031,6 @@ h1.font-script{
     confirmCancel.addEventListener("click", ()=>closeConfirm(false));
     confirmOk.addEventListener("click", ()=>closeConfirm(true));
     confirmOverlay.addEventListener("click", (e)=>{ if(e.target===confirmOverlay) closeConfirm(false); });
-
-    /**********************
-     * AI Settings modal  *
-     **********************/
-    const aiSettingsOverlay = document.getElementById("aiSettingsOverlay");
-    const aiEndpointInput = document.getElementById("aiEndpointInput");
-    const aiEndpointStatus = document.getElementById("aiEndpointStatus");
-    const aiSettingsCancel = document.getElementById("aiSettingsCancel");
-    const aiSettingsSave = document.getElementById("aiSettingsSave");
-    const aiSettingsTest = document.getElementById("aiSettingsTest");
-
-    function setAiEndpointStatus(message, tone){
-      if(!aiEndpointStatus) return;
-      aiEndpointStatus.textContent = message || "";
-      aiEndpointStatus.classList.remove("text-gray-600", "text-red-600", "text-gray-500");
-      if(!message){
-        aiEndpointStatus.classList.add("text-gray-500");
-        return;
-      }
-      aiEndpointStatus.classList.add(tone === "error" ? "text-red-600" : "text-gray-600");
-    }
-
-    function openAiSettingsModal(){
-      const stored = getStoredAiEndpoint();
-      if(aiEndpointInput){
-        aiEndpointInput.value = stored || DEFAULT_AI_ENDPOINT;
-        setAiEndpointStatus("", "");
-        aiEndpointInput.focus();
-      }
-      aiSettingsOverlay.classList.add("show");
-    }
-
-    function closeAiSettingsModal(){
-      aiSettingsOverlay.classList.remove("show");
-    }
-
-    aiSettingsCancel.addEventListener("click", closeAiSettingsModal);
-    aiSettingsOverlay.addEventListener("click", (e)=>{ if(e.target===aiSettingsOverlay) closeAiSettingsModal(); });
-
-    aiSettingsSave.addEventListener("click", ()=>{
-      const cleaned = normalizeEndpoint(aiEndpointInput.value);
-      if(!cleaned){
-        setAiEndpointStatus("Enter a valid http(s) URL", "error");
-        return;
-      }
-      lsSet(KEYS.aiEndpoint, cleaned);
-      closeAiSettingsModal();
-      updatePackingStatus("AI endpoint saved", "success");
-      render();
-    });
-
-    aiSettingsTest.addEventListener("click", async ()=>{
-      const cleaned = normalizeEndpoint(aiEndpointInput.value);
-      if(!cleaned){
-        setAiEndpointStatus("Enter a valid http(s) URL", "error");
-        return;
-      }
-      setAiEndpointStatus("Testing connection...", "info");
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-      try{
-        const res = await fetch(`${cleaned}/`, { method: "GET", signal: controller.signal });
-        const text = await res.text();
-        if(res.ok && text.trim() === "OK"){
-          setAiEndpointStatus("Connected", "success");
-        } else {
-          setAiEndpointStatus("Could not reach endpoint", "error");
-        }
-      }catch(error){
-        setAiEndpointStatus("Could not reach endpoint", "error");
-      }finally{
-        clearTimeout(timeoutId);
-      }
-    });
 
     /**********************
      * Tabs               *
@@ -2186,150 +1988,6 @@ h1.font-script{
         packingList.appendChild(list);
       }
       wrap.appendChild(packingList);
-
-      const suggestionsCard = el(`
-        <div id="packingSuggestionsCard" class="mb-6 p-4 card shadow-sm">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;">
-            <div>
-              <h3 class="font-semibold" style="color:var(--ink);margin:0 0 6px;">Suggested from itinerary</h3>
-              <div class="text-xs text-gray-600">Use the itinerary to populate a smart packing list.</div>
-            </div>
-            <div class="text-xs text-gray-600">
-              <span id="packingSuggestCount">0</span> suggestions
-            </div>
-          </div>
-          <div class="mt-4" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-            <button id="packingSuggestAIBtn" class="btn-primary" type="button">AI suggestions</button>
-            <button id="packingSuggestBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--ink);font-weight:600;">Basic suggestions</button>
-            <button id="packingResetBtn" class="hover-bg" type="button" style="border:1px solid var(--border);color:var(--muted);font-weight:600;">Reset suggestions</button>
-            <button id="packingAiSettingsBtn" class="btn-link" type="button">AI Settings</button>
-          </div>
-          <div id="packingSuggestStatus" class="text-xs text-gray-500" style="margin-top:8px;"></div>
-          <div id="packingSuggestionsList" class="space-y-3" style="margin-top:16px;"></div>
-        </div>
-      `);
-
-      const aiBtn = suggestionsCard.querySelector("#packingSuggestAIBtn");
-      const basicBtn = suggestionsCard.querySelector("#packingSuggestBtn");
-      const resetBtn = suggestionsCard.querySelector("#packingResetBtn");
-      const aiSettingsBtn = suggestionsCard.querySelector("#packingAiSettingsBtn");
-      const countLabel = suggestionsCard.querySelector("#packingSuggestCount");
-      const listEl = suggestionsCard.querySelector("#packingSuggestionsList");
-
-      function renderSuggestions(){
-        listEl.innerHTML = "";
-        const mode = state.packingSuggestionMode || "basic";
-        const suggestions = mode === "ai"
-          ? getFilteredPackingSuggestions(state.packingAISuggestions, state.packingAIDismissed)
-          : getFilteredPackingSuggestions(BASIC_PACKING_SUGGESTIONS, state.packingDismissed);
-        countLabel.textContent = String(suggestions.length);
-
-        if(!suggestions.length){
-          listEl.appendChild(el(`<div class="text-sm text-gray-600">No suggestions right now.</div>`));
-          return;
-        }
-
-        suggestions.forEach(s=>{
-          const qtyLabel = (s.qty !== undefined && s.qty !== null && String(s.qty).trim() !== "")
-            ? `<span class="text-xs text-gray-500" style="margin-left:6px;">Qty: ${escapeHtml(s.qty)}</span>`
-            : "";
-          const card = el(`
-            <div class="p-3 card shadow-sm" style="background:#FCFBFA;">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
-                <div style="flex:1;">
-                  <div class="text-xs text-gray-600">${escapeHtml(s.category || "General")}</div>
-                  <div class="font-semibold" style="color:var(--ink);margin-top:4px;">${escapeHtml(s.item)}${qtyLabel}</div>
-                  ${s.reason ? `<div class="text-xs text-gray-500" style="margin-top:6px;">${escapeHtml(s.reason)}</div>` : ""}
-                </div>
-                <div style="display:flex;gap:6px;">
-                  <button class="btn-primary" type="button" style="padding:6px 10px;">Add</button>
-                  <button class="icon-btn hover-bg" type="button" title="Dismiss">✕</button>
-                </div>
-              </div>
-            </div>
-          `);
-          const addBtn = card.querySelectorAll("button")[0];
-          const dismissBtn = card.querySelectorAll("button")[1];
-
-          addBtn.addEventListener("click", ()=>{
-            addPackingItem(s.item);
-            if(mode === "ai"){
-              state.packingAIDismissed = [...new Set([...state.packingAIDismissed, String(s.id)])];
-              save("packingAIDismissed");
-            } else {
-              state.packingDismissed = [...new Set([...state.packingDismissed, String(s.id)])];
-              save("packingDismissed");
-            }
-            render();
-          });
-
-          dismissBtn.addEventListener("click", ()=>{
-            if(mode === "ai"){
-              state.packingAIDismissed = [...new Set([...state.packingAIDismissed, String(s.id)])];
-              save("packingAIDismissed");
-            } else {
-              state.packingDismissed = [...new Set([...state.packingDismissed, String(s.id)])];
-              save("packingDismissed");
-            }
-            render();
-          });
-
-          listEl.appendChild(card);
-        });
-      }
-
-      basicBtn.addEventListener("click", ()=>{
-        state.packingSuggestionMode = "basic";
-        updatePackingStatus("Basic suggestions updated", "success");
-        render();
-      });
-
-      aiSettingsBtn.addEventListener("click", ()=>{
-        openAiSettingsModal();
-      });
-
-      aiBtn.addEventListener("click", async ()=>{
-        aiBtn.disabled = true;
-        basicBtn.disabled = true;
-        resetBtn.disabled = true;
-        aiSettingsBtn.disabled = true;
-        updatePackingStatus("Generating AI suggestions…", "loading");
-        setPackingStatus(suggestionsCard, state.packingStatus.message, state.packingStatus.tone);
-
-        const result = await fetchPackingAISuggestions();
-        aiBtn.disabled = false;
-        basicBtn.disabled = false;
-        resetBtn.disabled = false;
-        aiSettingsBtn.disabled = false;
-
-        if(result.data){
-          state.packingAISuggestions = result.data.suggestions || [];
-          save("packingAISuggestions");
-          state.packingSuggestionMode = "ai";
-          updatePackingStatus("AI suggestions updated", "success");
-          render();
-          return;
-        }
-
-        updatePackingStatus(result.error || "AI unavailable — using Basic suggestions", "error");
-        state.packingSuggestionMode = "basic";
-        render();
-      });
-
-      resetBtn.addEventListener("click", ()=>{
-        state.packingDismissed = [];
-        state.packingAIDismissed = [];
-        state.packingAISuggestions = [];
-        save("packingDismissed");
-        save("packingAIDismissed");
-        save("packingAISuggestions");
-        updatePackingStatus("Suggestions reset", "success");
-        render();
-      });
-
-      setPackingStatus(suggestionsCard, state.packingStatus.message, state.packingStatus.tone);
-      renderSuggestions();
-      wrap.appendChild(suggestionsCard);
 
       return wrap;
     }

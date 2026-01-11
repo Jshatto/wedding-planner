@@ -1,15 +1,5 @@
 {
-  "name": "wedding-planner-ai-suggestions",
+  "name": "wedding-planner",
   "version": "1.0.0",
-  "description": "Minimal API for packing suggestions.",
-  "main": "server.js",
-  "type": "module",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.19.2",
-    "express-rate-limit": "^7.1.5"
-  }
+  "description": "Wedding planner static site."
 }
