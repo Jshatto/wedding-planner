@@ -300,28 +300,6 @@ h1.font-script{
     .card,
     .tableWrap{max-width:100%}
 
-    .header{
-      display:flex;
-      align-items:flex-start;
-      justify-content:space-between;
-      gap:16px;
-    }
-    .header-content{
-      flex:1;
-      text-align:center;
-    }
-    .header-actions{
-      display:flex;
-      justify-content:flex-end;
-      align-items:flex-start;
-    }
-    .header-sync{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding:10px 16px;
-    }
-
     /* modal */
     .modalOverlay{
       position:fixed;inset:0;background:rgba(0,0,0,.35);
@@ -391,8 +369,6 @@ h1.font-script{
       .p-6{ padding: 16px; }
       .p-4{ padding: 14px; }
       .p-3{ padding: 12px; }
-      .header{ flex-direction:column; align-items:center; }
-      .header-actions{ width:100%; justify-content:center; }
       .text-4xl{ font-size: 30px; }
       .cat-header{ padding: 14px; }
       .task-row{ padding: 14px; }
@@ -614,20 +590,12 @@ h1.font-script{
 <body>
   <div class="container">
     <!-- Header -->
-    <div class="header mb-8">
-      <div class="header-content">
-        <h1 class="text-4xl font-script" style="color:var(--ink); margin:0 0 8px;">Jayme &amp; Nate</h1>
-        <p class="text-gray-600 italic" style="margin:0;">Modern Minimal • Soft Romantic • Classic</p>
-        <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full" style="background:var(--taupe); padding:10px 14px;">
-          <span aria-hidden="true">📅</span>
-          <span class="text-sm" style="color:var(--ink)">~75 Guests • Church Ceremony &amp; Reception</span>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button id="openSyncBtn" class="btn-primary header-sync" type="button">
-          <span aria-hidden="true">🔄</span>
-          Sync
-        </button>
+    <div class="text-center mb-8">
+      <h1 class="text-4xl font-script" style="color:var(--ink); margin:0 0 8px;">Jayme &amp; Nate</h1>
+      <p class="text-gray-600 italic" style="margin:0;">Modern Minimal • Soft Romantic • Classic</p>
+      <div class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full" style="background:var(--taupe); padding:10px 14px;">
+        <span aria-hidden="true">📅</span>
+        <span class="text-sm" style="color:var(--ink)">~75 Guests • Church Ceremony &amp; Reception</span>
       </div>
     </div>
 
@@ -651,17 +619,6 @@ h1.font-script{
         <button class="btn-outline" id="confirmCancel" type="button">Cancel</button>
         <button class="btn-danger" id="confirmOk" type="button">Yes, remove</button>
       </div>
-    </div>
-  </div>
-
-  <!-- Sync Modal -->
-  <div class="modalOverlay" id="syncOverlay" role="dialog" aria-modal="true" aria-labelledby="syncTitle">
-    <div class="modal">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
-        <div class="text-xl font-semibold" id="syncTitle" style="color:var(--ink)">Sync &amp; Backup</div>
-        <button class="icon-btn" id="syncClose" type="button" aria-label="Close">✕</button>
-      </div>
-      <div id="syncModalBody" class="mt-4"></div>
     </div>
   </div>
 
@@ -1231,32 +1188,6 @@ h1.font-script{
     confirmOverlay.addEventListener("click", (e)=>{ if(e.target===confirmOverlay) closeConfirm(false); });
 
     /**********************
-     * Sync modal         *
-     **********************/
-    const syncOverlay = document.getElementById("syncOverlay");
-    const syncClose = document.getElementById("syncClose");
-    const syncModalBody = document.getElementById("syncModalBody");
-    const openSyncBtn = document.getElementById("openSyncBtn");
-
-    function openSyncModal(){
-      syncModalBody.innerHTML = "";
-      syncModalBody.appendChild(renderSyncPanel());
-      syncOverlay.classList.add("show");
-    }
-    function closeSyncModal(){
-      syncOverlay.classList.remove("show");
-      syncModalBody.innerHTML = "";
-    }
-    openSyncBtn.addEventListener("click", openSyncModal);
-    syncClose.addEventListener("click", closeSyncModal);
-    syncOverlay.addEventListener("click", (e)=>{ if(e.target===syncOverlay) closeSyncModal(); });
-    document.addEventListener("keydown", (e)=>{
-      if(e.key === "Escape" && syncOverlay.classList.contains("show")){
-        closeSyncModal();
-      }
-    });
-
-    /**********************
      * Tabs               *
      **********************/
     const tabs = [
@@ -1269,16 +1200,9 @@ h1.font-script{
       { id:'shopping', name:'Shopping', icon:'🛒' },
       { id:'delegation', name:'Delegation', icon:'👤' },
       { id:'diy', name:'DIY List', icon:'🛠️' },     // ADDED (not replacing)
-      { id:'inspiration', name:'Inspiration', icon:'💡' }
+      { id:'inspiration', name:'Inspiration', icon:'💡' },
+      { id:'sync', name:'Sync', icon:'🔄' }
       ];
-
-    function normalizeActiveTab(){
-      const allowedTabs = new Set(tabs.map(t=>t.id));
-      if(!allowedTabs.has(state.activeTab)){
-        state.activeTab = "tasks";
-        save("activeTab");
-      }
-    }
 
     function renderTabs(){
       const row = document.getElementById("tabsRow");
@@ -2774,11 +2698,12 @@ h1.font-script{
       return wrap;
     }
 
-    function renderSyncPanel(){
+    function renderSyncTab(){
       const wrap = document.createElement("div");
 
       const card = el(`
-        <div class="p-4 card shadow-sm">
+        <div class="p-6 card shadow-sm">
+          <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0 0 6px;">Sync &amp; Backup</h2>
           <p class="text-sm text-gray-600" style="margin:0 0 16px;">
             Export a JSON backup of your planner data or import a backup from another device.
           </p>
@@ -2888,6 +2813,7 @@ h1.font-script{
       else if(state.activeTab === "delegation") root.appendChild(renderDelegationTab());
       else if(state.activeTab === "diy") root.appendChild(renderDIYTab());
       else if(state.activeTab === "inspiration") root.appendChild(renderInspirationTab());
+      else if(state.activeTab === "sync") root.appendChild(renderSyncTab());
       else root.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">Tab coming soon.</div>`));
     }
 
@@ -2895,7 +2821,6 @@ h1.font-script{
      * Boot               *
      **********************/
     load();
-    normalizeActiveTab();
     save("tasks"); // persist normalization
     render();
   </script>
