@@ -717,6 +717,25 @@ h1.font-script{
       itinerary: "wp_itinerary",
       packing: "wp_packing"
     };
+    const LAST_EXPORT_KEY = "weddingPlanner_lastExportAt";
+    const STORAGE_KEYS = [
+      "wp_activeTab",
+      "wp_expanded",
+      "wp_tasks",
+      "wp_budget",
+      "wp_vendors",
+      "wp_guests",
+      "wp_timeline",
+      "wp_shopping",
+      "wp_inspiration",
+      "wp_totalBudget",
+      "wp_diy",
+      "wp_budgetCats",
+      "wp_itinerary",
+      "wp_packing",
+      "wp_delegation",
+      "weddingPlanner_lastExportAt"
+    ];
 
     const state = {
       activeTab: "tasks",
@@ -848,6 +867,144 @@ h1.font-script{
     }
     function normalizeItemName(name){
       return String(name || "").trim().toLowerCase();
+    }
+
+    // ===== Sync & Backup (Import/Export) =====
+    function getLastExportLabel(){
+      const lastExport = lsGet(LAST_EXPORT_KEY, "");
+      if(!lastExport) return "Last export: Never";
+      const parsed = new Date(lastExport);
+      if(Number.isNaN(parsed.getTime())) return "Last export: Unknown";
+      return `Last export: ${parsed.toLocaleString()}`;
+    }
+
+    function buildBackupPayload(){
+      const data = {};
+      STORAGE_KEYS.forEach((key)=>{
+        data[key] = localStorage.getItem(key);
+      });
+      return {
+        app: "wedding-planner",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        data
+      };
+    }
+
+    function downloadBackup(payload){
+      const json = JSON.stringify(payload, null, 2);
+      const dateStamp = payload.exportedAt.slice(0, 10);
+      const filename = `wedding-planner-backup-${dateStamp}.json`;
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      setTimeout(()=>{
+        URL.revokeObjectURL(url);
+        link.remove();
+      }, 0);
+    }
+
+    function parseMaybeJson(value){
+      if(value === null || value === undefined) return { ok: false, value: null };
+      if(typeof value === "string"){
+        const parsed = safeJson(value, "__parse_fail__");
+        if(parsed !== "__parse_fail__"){
+          return { ok: true, value: parsed };
+        }
+        return { ok: false, value };
+      }
+      return { ok: true, value };
+    }
+
+    function isPlainObject(value){
+      return !!value && typeof value === "object" && !Array.isArray(value);
+    }
+
+    function mergeArrays(existingArr, incomingArr){
+      const hasId = (item)=>item && typeof item === "object" && "id" in item;
+      const merged = [];
+      const seenIds = new Map();
+      const seenItems = new Set();
+
+      existingArr.forEach((item)=>{
+        if(hasId(item)){
+          seenIds.set(item.id, item);
+        } else {
+          const token = JSON.stringify(item);
+          seenItems.add(token);
+          merged.push(item);
+        }
+      });
+
+      incomingArr.forEach((item)=>{
+        if(hasId(item)){
+          seenIds.set(item.id, item);
+        } else {
+          const token = JSON.stringify(item);
+          if(!seenItems.has(token)){
+            seenItems.add(token);
+            merged.push(item);
+          }
+        }
+      });
+
+      if(seenIds.size){
+        return [...seenIds.values(), ...merged];
+      }
+      return merged;
+    }
+
+    function serializeStorageValue(value){
+      if(value === null || value === undefined) return null;
+      if(typeof value === "string") return value;
+      return JSON.stringify(value);
+    }
+
+    function applyReplaceImport(incomingData){
+      STORAGE_KEYS.forEach((key)=>{
+        if(!Object.prototype.hasOwnProperty.call(incomingData, key)) return;
+        const value = incomingData[key];
+        if(value === null || value === undefined){
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, serializeStorageValue(value));
+        }
+      });
+    }
+
+    function applyMergeImport(incomingData){
+      STORAGE_KEYS.forEach((key)=>{
+        if(!Object.prototype.hasOwnProperty.call(incomingData, key)) return;
+        const incoming = incomingData[key];
+        if(incoming === null || incoming === undefined){
+          localStorage.removeItem(key);
+          return;
+        }
+
+        const existingRaw = localStorage.getItem(key);
+        const existingParsed = parseMaybeJson(existingRaw);
+        const incomingParsed = parseMaybeJson(incoming);
+
+        if(existingParsed.ok && incomingParsed.ok){
+          const existingVal = existingParsed.value;
+          const incomingVal = incomingParsed.value;
+
+          if(isPlainObject(existingVal) && isPlainObject(incomingVal)){
+            localStorage.setItem(key, JSON.stringify({ ...existingVal, ...incomingVal }));
+            return;
+          }
+          if(Array.isArray(existingVal) && Array.isArray(incomingVal)){
+            localStorage.setItem(key, JSON.stringify(mergeArrays(existingVal, incomingVal)));
+            return;
+          }
+        }
+
+        localStorage.setItem(key, serializeStorageValue(incoming));
+      });
     }
 
     function vendorBudgetItemLabel(vendor){
@@ -1045,7 +1202,8 @@ h1.font-script{
       { id:'shopping', name:'Shopping', icon:'🛒' },
       { id:'delegation', name:'Delegation', icon:'👤' },
       { id:'diy', name:'DIY List', icon:'🛠️' },     // ADDED (not replacing)
-      { id:'inspiration', name:'Inspiration', icon:'💡' }
+      { id:'inspiration', name:'Inspiration', icon:'💡' },
+      { id:'sync', name:'Sync', icon:'🔄' }
       ];
 
     function renderTabs(){
@@ -2542,6 +2700,103 @@ h1.font-script{
       return wrap;
     }
 
+    function renderSyncTab(){
+      const wrap = document.createElement("div");
+
+      const card = el(`
+        <div class="p-6 card shadow-sm">
+          <h2 class="text-xl font-semibold" style="color:var(--ink);margin:0 0 6px;">Sync &amp; Backup</h2>
+          <p class="text-sm text-gray-600" style="margin:0 0 16px;">
+            Export a JSON backup of your planner data or import a backup from another device.
+          </p>
+
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-2">
+              <button id="exportBackupBtn" class="btn-primary" type="button">Export Backup</button>
+              <div>
+                <label class="text-xs font-semibold text-gray-600" for="importBackupInput">Import backup</label>
+                <input id="importBackupInput" type="file" accept="application/json" />
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="text-xs font-semibold text-gray-600" for="importModeSelect">Import mode</label>
+                <select id="importModeSelect">
+                  <option value="replace" selected>Replace (default)</option>
+                  <option value="merge">Merge</option>
+                </select>
+              </div>
+              <div class="text-xs text-gray-600" id="lastExportLabel" style="display:flex;align-items:flex-end;"></div>
+            </div>
+          </div>
+        </div>
+      `);
+
+      const exportBtn = card.querySelector("#exportBackupBtn");
+      const importInput = card.querySelector("#importBackupInput");
+      const importModeSelect = card.querySelector("#importModeSelect");
+      const lastExportLabel = card.querySelector("#lastExportLabel");
+
+      lastExportLabel.textContent = getLastExportLabel();
+
+      exportBtn.addEventListener("click", ()=>{
+        try{
+          const payload = buildBackupPayload();
+          lsSet(LAST_EXPORT_KEY, payload.exportedAt);
+          downloadBackup(payload);
+          lastExportLabel.textContent = getLastExportLabel();
+        } catch (e){
+          alert("Sorry, we couldn't export your backup. Please try again.");
+        }
+      });
+
+      importInput.addEventListener("change", ()=>{
+        const file = importInput.files && importInput.files[0];
+        if(!file) return;
+
+        const reader = new FileReader();
+        reader.onerror = ()=>{
+          importInput.value = "";
+          alert("Unable to read that file. Please try again.");
+        };
+        reader.onload = ()=>{
+          try{
+            const payload = JSON.parse(reader.result);
+            if(!payload || typeof payload !== "object" || !payload.data || typeof payload.data !== "object"){
+              importInput.value = "";
+              alert("That file doesn’t look like a valid wedding planner backup.");
+              return;
+            }
+
+            const ok = window.confirm("Importing will update your planner data. Continue?");
+            if(!ok){
+              importInput.value = "";
+              return;
+            }
+
+            if(importModeSelect.value === "merge"){
+              applyMergeImport(payload.data);
+            } else {
+              applyReplaceImport(payload.data);
+            }
+
+            importInput.value = "";
+            alert("Backup imported successfully. The page will now reload.");
+            location.reload();
+          } catch (e){
+            importInput.value = "";
+            alert("Sorry, we couldn't import that file. Please make sure it's a valid JSON backup.");
+          }
+        };
+
+        reader.readAsText(file);
+      });
+
+      wrap.appendChild(card);
+      return wrap;
+    }
+
     /**********************
      * Main render        *
      **********************/
@@ -2560,6 +2815,7 @@ h1.font-script{
       else if(state.activeTab === "delegation") root.appendChild(renderDelegationTab());
       else if(state.activeTab === "diy") root.appendChild(renderDIYTab());
       else if(state.activeTab === "inspiration") root.appendChild(renderInspirationTab());
+      else if(state.activeTab === "sync") root.appendChild(renderSyncTab());
       else root.appendChild(el(`<div class="p-6 card shadow-sm text-sm text-gray-600">Tab coming soon.</div>`));
     }
 
